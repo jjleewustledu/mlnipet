@@ -1,4 +1,4 @@
-classdef NipetBuilder 
+classdef NipetBuilder < mlpipeline.AbstractBuilder
 	%% NIPETBUILDER
 
 	%  $Revision$
@@ -7,6 +7,7 @@ classdef NipetBuilder
  	%% It was developed on Matlab 9.4.0.813654 (R2018a) for MACI64.  Copyright 2018 John Joowon Lee.
  	
 	properties (Constant)
+        FSLROI_ARGS = '86 172 86 172 0 -1'
  		LISTMODE_PREFIX = '1.3.12.2.1107.5.2.38.51010'
         NIPET_PREFIX = '1.3.12.2'
     end
@@ -24,13 +25,19 @@ classdef NipetBuilder
  			nipetData.itr = 5;
             nipetData.tracer = 'FDG';
             nipetData.visit = 1;
-            nipetData.tracerConvertedLocation = '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC';
+            nipetData.tracerConvertedLocation = ...
+                '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC';
+            nipetData.tracerReconstructedLocation = ...
+                '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC/reconstructed';
             
+            pwd0 = pushd(nipetData.tracerReconstructedLocation);
             this = mlnipet.NipetBuilder(nipetData);            
             names = this.standardizeFileNames;
             name = this.mergeFrames(names);
             %this.crop(names);
-            this.crop(name);
+            name = this.crop(name);
+            this = this.packageProduct(name);
+            popd(pwd0);
         end
     end
 
@@ -68,16 +75,16 @@ classdef NipetBuilder
             
             % base case
             fn = lower(FN);
-            if (~strcmp(fn, FN));
-                mlbash(sprintf('fslroi %s %s 86 172 86 172 0 -1', FN, fn));
+            if (~strcmp(fn, FN))
+                mlbash(sprintf('fslroi %s %s %s', FN, fn, this.FSLROI_ARGS));
             end
         end
         function n = mergeFrames(this, varargin)
             ip = inputParser;
             addRequired(ip, 'carr', @iscell);
             addOptional(ip, 'output', this.standardMergedName, @ischar);
-            n = ip.Results.output;
             parse(ip, varargin{:});
+            n = ip.Results.output;
             if (isempty(ip.Results.carr))
                 return
             end
@@ -94,7 +101,6 @@ classdef NipetBuilder
         function carr = standardizeFileNames(this)
             %  @return carr is cell array of short, mnemonic names.
             
-            pwd0 = pushd(fullfile(this.nipetData_.tracerConvertedLocation, 'reconstructed', ''));
             lms = mlsystem.DirTool(this.lmNamesAst);
             carr = cell(1, length(lms));
             for f = 1:length(lms)
@@ -102,7 +108,6 @@ classdef NipetBuilder
                 carr{f} = this.standardFramedName(str2double(r.frame));
                 movefile(lms.fns{f}, carr{f});
             end
-            popd(pwd0);
         end        
 		  
  		function this = NipetBuilder(varargin)
