@@ -21,7 +21,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
     end
     
     methods (Static)
-        function this = CreatePrototype
+        function this = CreatePrototypeNAC
  			nipetData.itr = 5;
             nipetData.tracer = 'FDG';
             nipetData.visit = 1;
@@ -29,6 +29,28 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC';
             nipetData.tracerReconstructedLocation = ...
                 '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC/reconstructed';
+            nipetData.lmTag = ...
+                'createDynamicNAC';
+            
+            pwd0 = pushd(nipetData.tracerReconstructedLocation);
+            this = mlnipet.NipetBuilder(nipetData);            
+            names = this.standardizeFileNames;
+            name = this.mergeFrames(names);
+            %this.crop(names);
+            name = this.crop(name);
+            this = this.packageProduct(name);
+            popd(pwd0);
+        end
+        function this = CreatePrototypeAC
+ 			nipetData.itr = 5;
+            nipetData.tracer = 'FDG';
+            nipetData.visit = 1;
+            nipetData.tracerConvertedLocation = ...
+                '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-AC';
+            nipetData.tracerReconstructedLocation = ...
+                '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-AC/reconstructed';
+            nipetData.lmTag = ...
+                'createDynamicAC';
             
             pwd0 = pushd(nipetData.tracerReconstructedLocation);
             this = mlnipet.NipetBuilder(nipetData);            
@@ -46,10 +68,10 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         %% GET
         
         function g = get.lmNamesAst(this)
-            g = sprintf('%s*_itr%i_createDynamicNAC_time*.nii.gz', this.NIPET_PREFIX, this.itr);
+            g = sprintf('%s*_itr%i_%s_time*.nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
         end
         function g = get.lmNamesRE(this)
-            g = sprintf('%s_\\S+_itr%i_createDynamicNAC_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.itr);
+            g = sprintf('%s_\\S+_itr%i_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
         end
         function g = get.itr(this)
             g = this.nipetData_.itr;
@@ -63,7 +85,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         
         %%
         
-        function fn = crop(this, FN)
+        function fn   = crop(this, FN)
             
             % recursion
             if (iscell(FN))
@@ -79,7 +101,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 mlbash(sprintf('fslroi %s %s %s', FN, fn, this.FSLROI_ARGS));
             end
         end
-        function n = mergeFrames(this, varargin)
+        function n    = mergeFrames(this, varargin)
             ip = inputParser;
             addRequired(ip, 'carr', @iscell);
             addOptional(ip, 'output', this.standardMergedName, @ischar);
@@ -91,10 +113,10 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
 
             mlbash(sprintf('fslmerge -t %s %s', n, cell2str(ip.Results.carr, 'AsRows', true)));
         end
-        function n = standardMergedName(this)
+        function n    = standardMergedName(this)
             n = sprintf('%sv%i.nii.gz', upper(this.tracer), this.visit);
         end
-        function n = standardFramedName(this, fr)
+        function n    = standardFramedName(this, fr)
             assert(isnumeric(fr));
             n = sprintf('%sv%i_frame%i.nii.gz', upper(this.tracer), this.visit, fr);
         end
