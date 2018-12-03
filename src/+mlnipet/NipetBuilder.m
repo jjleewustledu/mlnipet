@@ -38,7 +38,6 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             this = mlnipet.NipetBuilder(nipetData);            
             names = this.standardizeFileNames;
             name = this.mergeFrames(names);
-            %this.crop(names);
             name = this.crop(name);
             this = this.packageProduct(name);
             popd(pwd0);
@@ -100,9 +99,12 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             end
             
             % base case
-            fn = lower(FN);
+            [pth,fp,x] = myfileparts(FN);
+            fn = fullfile(pth, [lower(fp) x]);
             if (~strcmp(fn, FN))
+                pwd0 = pushd(myfileparts(FN));
                 mlbash(sprintf('fslroi %s %s %s', FN, fn, this.FSLROI_ARGS));
+                popd(pwd0);
             end
         end
         function n    = mergeFrames(this, varargin)
@@ -144,20 +146,20 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             end
             error('mlnipet:ValueError', 'NipetBuilder.standardFramedNames');
         end
-        function carr = standardizeFileNames(this)
-            %  @return carr is cell array of short, mnemonic names.
+        function n    = standardizeFileNames(this)
+            %  @return n is cell array of short, mnemonic names in frame-numerical order.
             
-            lms = mlsystem.DirTool(this.lmNamesAst);
-            if (isempty(lms.fns))
-                carr = this.standardFramedNames('*');
+            unsorted = mlsystem.DirTool(this.lmNamesAst); % filesystem-name sorted, not frame-numerically sorted
+            if (isempty(unsorted.fns)) % files were previously renamed
+                n = this.standardFramedNames('*'); 
                 return
             end
-            carr = cell(1, length(lms));
-            for f = 1:length(lms)
-                r = regexp(lms.fns{f}, this.lmNamesRE, 'names');
-                carr{f} = this.standardFramedName(str2double(r.frame));
-                movefile(lms.fns{f}, carr{f});
+            
+            for f = 1:length(unsorted)
+                r = regexp(unsorted.fns{f}, this.lmNamesRE, 'names');
+                movefile(unsorted.fns{f}, this.standardFramedName(str2double(r.frame)));
             end
+            n = this.standardFramedNames(1:length(unsorted.fns));
         end        
 		  
  		function this = NipetBuilder(varargin)
