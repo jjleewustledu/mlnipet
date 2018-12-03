@@ -9,7 +9,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
 	properties (Constant)
         FSLROI_ARGS = '86 172 86 172 0 -1'
  		LISTMODE_PREFIX = '1.3.12.2.1107.5.2.38.51010'
-        NIPET_PREFIX = '1.3.12.2'
+        NIPET_PREFIX = 'a' %'1.3.12.2'
     end
     
     properties (Dependent)
@@ -22,17 +22,19 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
     
     methods (Static)
         function this = CreatePrototypeNAC
- 			nipetData.itr = 5;
+ 			nipetData.itr = 4;
             nipetData.tracer = 'FDG';
             nipetData.visit = 1;
             nipetData.tracerConvertedLocation = ...
                 '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC';
-            nipetData.tracerReconstructedLocation = ...
-                '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC/reconstructed';
+            nipetData.tracerOutputSingleFrameLocation = ...
+                '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC/output/PET/single-frame';
+            nipetData.tracerOutputLocation = ...
+                '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC/output/PET';
             nipetData.lmTag = ...
                 'createDynamicNAC';
             
-            pwd0 = pushd(nipetData.tracerReconstructedLocation);
+            pwd0 = pushd(nipetData.tracerOutputSingleFrameLocation);
             this = mlnipet.NipetBuilder(nipetData);            
             names = this.standardizeFileNames;
             name = this.mergeFrames(names);
@@ -42,21 +44,22 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             popd(pwd0);
         end
         function this = CreatePrototypeAC
- 			nipetData.itr = 5;
+ 			nipetData.itr = 4;
             nipetData.tracer = 'FDG';
             nipetData.visit = 1;
             nipetData.tracerConvertedLocation = ...
                 '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-AC';
-            nipetData.tracerReconstructedLocation = ...
-                '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-AC/reconstructed';
+            nipetData.tracerOutputSingleFrameLocation = ...
+                '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-AC/output/PET/single-frame';
+            nipetData.tracerOutputLocation = ...
+                '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-AC/output/PET';
             nipetData.lmTag = ...
-                'createDynamicAC';
+                'createDynamic2Carney';
             
-            pwd0 = pushd(nipetData.tracerReconstructedLocation);
+            pwd0 = pushd(nipetData.tracerOutputSingleFrameLocation);
             this = mlnipet.NipetBuilder(nipetData);            
             names = this.standardizeFileNames;
             name = this.mergeFrames(names);
-            %this.crop(names);
             name = this.crop(name);
             this = this.packageProduct(name);
             popd(pwd0);
@@ -68,10 +71,11 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         %% GET
         
         function g = get.lmNamesAst(this)
-            g = sprintf('%s*_itr%i_%s_time*.nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
+            g = sprintf('%s_itr-%i_t-*-*sec_%s_time*.nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
         end
         function g = get.lmNamesRE(this)
-            g = sprintf('%s_\\S+_itr%i_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
+            %g = sprintf('%s_\\S+_itr%i_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
+            g = sprintf('%s_itr-%i_t-\\d+-\\d+sec_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
         end
         function g = get.itr(this)
             g = this.nipetData_.itr;
@@ -106,24 +110,48 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             addRequired(ip, 'carr', @iscell);
             addOptional(ip, 'output', this.standardMergedName, @ischar);
             parse(ip, varargin{:});
+            c = ip.Results.carr;
             n = ip.Results.output;
-            if (isempty(ip.Results.carr))
-                return
-            end
-
-            mlbash(sprintf('fslmerge -t %s %s', n, cell2str(ip.Results.carr, 'AsRows', true)));
+            
+            assert(~isempty(c));
+            mlbash(sprintf('fslmerge -t %s %s', n, cell2str(c, 'AsRows', true)));
         end
         function n    = standardMergedName(this)
-            n = sprintf('%sv%i.nii.gz', upper(this.tracer), this.visit);
+            n = fullfile( ...
+                this.nipetData_.tracerOutputLocation, ...
+                sprintf('%sv%i.nii.gz', upper(this.tracer), this.visit));
         end
         function n    = standardFramedName(this, fr)
-            assert(isnumeric(fr));
-            n = sprintf('%sv%i_frame%i.nii.gz', upper(this.tracer), this.visit, fr);
+            if (isnumeric(fr))
+                n = sprintf('%sv%i_frame%i.nii.gz', upper(this.tracer), this.visit, fr);
+                return
+            end
+            if (ischar(fr))
+                n = sprintf('%sv%i_frame%s.nii.gz', upper(this.tracer), this.visit, fr);
+                return
+            end
+            error('mlnipet:ValueError', 'NipetBuilder.standardFramedName');
+        end
+        function n    = standardFramedNames(this, fr)
+            if (isnumeric(fr))
+                n = cellfun(@(x) this.standardFramedName(x), num2cell(fr), 'UniformOutput', false);
+                return
+            end
+            if (ischar(fr))
+                dt = mlsystem.DirTool(this.standardFramedName(fr));
+                n  = this.standardFramedNames(0:length(dt.fns)-1);
+                return
+            end
+            error('mlnipet:ValueError', 'NipetBuilder.standardFramedNames');
         end
         function carr = standardizeFileNames(this)
             %  @return carr is cell array of short, mnemonic names.
             
             lms = mlsystem.DirTool(this.lmNamesAst);
+            if (isempty(lms.fns))
+                carr = this.standardFramedNames('*');
+                return
+            end
             carr = cell(1, length(lms));
             for f = 1:length(lms)
                 r = regexp(lms.fns{f}, this.lmNamesRE, 'names');
@@ -144,10 +172,13 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
  		end
     end 
     
-    %% PRIvATE
+    %% PRIVATE
     
     properties (Access = private)
         nipetData_
+    end
+    
+    methods (Access = private)
     end
 
 	%  Created with Newcl by John J. Lee after newfcn by Frank Gonzalez-Morphy
