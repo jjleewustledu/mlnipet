@@ -159,7 +159,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 r = regexp(unsorted.fns{f}, this.lmNamesRE, 'names');
                 movefile(unsorted.fns{f}, this.standardFramedName(str2double(r.frame)));
             end
-            n = this.standardFramedNames(1:length(unsorted.fns));
+            n = this.standardFramedNames(0:length(unsorted.fns)-1);
         end        
 		  
  		function this = NipetBuilder(varargin)
