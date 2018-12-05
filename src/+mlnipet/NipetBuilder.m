@@ -13,50 +13,58 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
     end
     
     properties (Dependent)
+        itr
         lmNamesAst
         lmNamesRE
-        itr
         tracer
-        visit
+        vnumber
     end
     
     methods (Static)
-        function this = CreatePrototypeNAC
- 			nipetData.itr = 4;
-            nipetData.tracer = 'FDG';
-            nipetData.visit = 1;
-            nipetData.tracerConvertedLocation = ...
+        function this = CreatePrototypeNAC(varargin)
+ 			nipetd_.itr = 4;
+            nipetd_.tracer = 'FDG';
+            nipetd_.vnumber = 1;
+            nipetd_.tracerConvertedLocation = ...
                 '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC';
-            nipetData.tracerOutputSingleFrameLocation = ...
+            nipetd_.tracerOutputSingleFrameLocation = ...
                 '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC/output/PET/single-frame';
-            nipetData.tracerOutputLocation = ...
+            nipetd_.tracerOutputLocation = ...
                 '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC/output/PET';
-            nipetData.lmTag = ...
+            nipetd_.lmTag = ...
                 'createDynamicNAC';
             
-            pwd0 = pushd(nipetData.tracerOutputSingleFrameLocation);
-            this = mlnipet.NipetBuilder(nipetData);            
+            ip = inputParser;
+            addOptional(ip, 'nipetd', nipetd_, @(x) isa(x, 'mlnipet.ISessionData') || isstruct(x));
+            parse(ip, varargin{:});
+            
+            pwd0 = pushd(ip.Results.nipetd.tracerOutputSingleFrameLocation);
+            this = mlnipet.NipetBuilder(ip.Results.nipetd);            
             names = this.standardizeFileNames;
             name = this.mergeFrames(names);
             name = this.crop(name);
             this = this.packageProduct(name);
             popd(pwd0);
         end
-        function this = CreatePrototypeAC
- 			nipetData.itr = 4;
-            nipetData.tracer = 'FDG';
-            nipetData.visit = 1;
-            nipetData.tracerConvertedLocation = ...
+        function this = CreatePrototypeAC(varargin)
+ 			nipetd_.itr = 4;
+            nipetd_.tracer = 'FDG';
+            nipetd_.vnumber = 1;
+            nipetd_.tracerConvertedLocation = ...
                 '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-AC';
-            nipetData.tracerOutputSingleFrameLocation = ...
+            nipetd_.tracerOutputSingleFrameLocation = ...
                 '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-AC/output/PET/single-frame';
-            nipetData.tracerOutputLocation = ...
+            nipetd_.tracerOutputLocation = ...
                 '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-AC/output/PET';
-            nipetData.lmTag = ...
+            nipetd_.lmTag = ...
                 'createDynamic2Carney';
             
-            pwd0 = pushd(nipetData.tracerOutputSingleFrameLocation);
-            this = mlnipet.NipetBuilder(nipetData);            
+            ip = inputParser;
+            addOptional(ip, 'nipetd', nipetd_, @(x) isa(x, 'mlnipet.ISessionData') || isstruct(x));
+            parse(ip, varargin{:});
+            
+            pwd0 = pushd(ip.Results.nipetd.tracerOutputSingleFrameLocation);
+            this = mlnipet.NipetBuilder(ip.Results.nipetd);            
             names = this.standardizeFileNames;
             name = this.mergeFrames(names);
             name = this.crop(name);
@@ -74,7 +82,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         end
         function g = get.lmNamesRE(this)
             %g = sprintf('%s_\\S+_itr%i_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
-            g = sprintf('%s_itr-%i_t-\\d+-\\d+sec_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
+            g = sprintf('%s_itr-%i_t-\\d+-\\d+sec_%stime(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
         end
         function g = get.itr(this)
             g = this.nipetData_.itr;
@@ -82,8 +90,8 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         function g = get.tracer(this)
             g = this.nipetData_.tracer;
         end
-        function g = get.visit(this)
-            g = this.nipetData_.visit;
+        function g = get.vnumber(this)
+            g = this.nipetData_.vnumber;
         end
         
         %%
@@ -121,15 +129,15 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         function n    = standardMergedName(this)
             n = fullfile( ...
                 this.nipetData_.tracerOutputLocation, ...
-                sprintf('%sv%i.nii.gz', upper(this.tracer), this.visit));
+                sprintf('%sv%i.nii.gz', upper(this.tracer), this.vnumber));
         end
         function n    = standardFramedName(this, fr)
             if (isnumeric(fr))
-                n = sprintf('%sv%i_frame%i.nii.gz', upper(this.tracer), this.visit, fr);
+                n = sprintf('%sv%i_frame%i.nii.gz', upper(this.tracer), this.vnumber, fr);
                 return
             end
             if (ischar(fr))
-                n = sprintf('%sv%i_frame%s.nii.gz', upper(this.tracer), this.visit, fr);
+                n = sprintf('%sv%i_frame%s.nii.gz', upper(this.tracer), this.vnumber, fr);
                 return
             end
             error('mlnipet:ValueError', 'NipetBuilder.standardFramedName');
