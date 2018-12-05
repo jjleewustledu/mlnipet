@@ -82,7 +82,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         end
         function g = get.lmNamesRE(this)
             %g = sprintf('%s_\\S+_itr%i_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
-            g = sprintf('%s_itr-%i_t-\\d+-\\d+sec_%stime(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
+            g = sprintf('%s_itr-%i_t-\\d+-\\d+sec_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
         end
         function g = get.itr(this)
             g = this.nipetData_.itr;
