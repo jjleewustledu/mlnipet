@@ -98,21 +98,26 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         
         function fn   = crop(this, FN)
             
-            % recursion
-            if (iscell(FN))
-                fn = cell(1, length(FN));
-                for i = 1:length(FN)
-                    fn{i} = this.crop(FN{i});
+            try
+
+                % recursion
+                if (iscell(FN))
+                    fn = cell(1, length(FN));
+                    for i = 1:length(FN)
+                        fn{i} = this.crop(FN{i});
+                    end
                 end
-            end
-            
-            % base case
-            [pth,fp,x] = myfileparts(FN);
-            fn = fullfile(pth, [lower(fp) x]);
-            if (~strcmp(fn, FN))
-                pwd0 = pushd(myfileparts(FN));
-                mlbash(sprintf('fslroi %s %s %s', FN, fn, this.FSLROI_ARGS));
-                popd(pwd0);
+
+                % base case
+                [pth,fp,x] = myfileparts(FN);
+                fn = fullfile(pth, [lower(fp) x]);
+                if (~strcmp(fn, FN))
+                    pwd0 = pushd(myfileparts(FN));
+                    mlbash(sprintf('fslroi %s %s %s', FN, fn, this.FSLROI_ARGS));
+                    popd(pwd0);
+                end
+            catch ME
+                dispexcept(ME, 'mlnipet:RuntimeError', 'NipetBuilder.crop could not crop %s', FN);
             end
         end
         function n    = mergeFrames(this, varargin)
@@ -124,14 +129,24 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             n = ip.Results.output;
             
             assert(~isempty(c));
+            cellfun(@(x) assert( ...
+                lexist(x, 'file', 'mlnipet:RuntimeError', 'NipetBuilder.mergeFrames could not find %s', x)), ...
+                c, 'UniformOutput', false);
             mlbash(sprintf('fslmerge -t %s %s', n, cell2str(c, 'AsRows', true)));
         end
         function n    = standardMergedName(this)
+            %% specifies standard name for given tracer, vnumber for all available frames.
+            
             n = fullfile( ...
                 this.nipetData_.tracerOutputLocation, ...
                 sprintf('%sv%i.nii.gz', upper(this.tracer), this.vnumber));
         end
         function n    = standardFramedName(this, fr)
+            %% specifies standard name for given tracer, vnumber and frame.
+            %  @param fr is numeric frame index | 
+            %  @param fr is char for pattern matching.
+            %  @return single filename.nii.gz for NIfTI.
+            
             if (isnumeric(fr))
                 n = sprintf('%sv%i_frame%i.nii.gz', upper(this.tracer), this.vnumber, fr);
                 return
@@ -142,24 +157,31 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             end
             error('mlnipet:ValueError', 'NipetBuilder.standardFramedName');
         end
-        function n    = standardFramedNames(this, fr)
+        function nn   = standardFramedNames(this, fr)
+            %% specifies standard names for given tracer, vnumber and frames.
+            %  @param fr is numeric array of frame numbers | 
+            %  @param fr is pattern-matching char to be interpreted by standardFramedName for frames starting with frame0.
+            %  @return cell array standardFramedName instances.
+            
             if (isnumeric(fr))
-                n = cellfun(@(x) this.standardFramedName(x), num2cell(fr), 'UniformOutput', false);
+                nn = cellfun(@(x) this.standardFramedName(x), num2cell(fr), 'UniformOutput', false);
                 return
             end
             if (ischar(fr))
                 dt = mlsystem.DirTool(this.standardFramedName(fr));
-                n  = this.standardFramedNames(0:length(dt.fns)-1);
+                nn  = this.standardFramedNames(0:length(dt.fns)-1);
                 return
             end
             error('mlnipet:ValueError', 'NipetBuilder.standardFramedNames');
         end
-        function n    = standardizeFileNames(this)
-            %  @return n is cell array of short, mnemonic names in frame-numerical order.
+        function nn   = standardizeFileNames(this)
+            %% renames unsorted files matching lmNamesAst with new names specified by standardFramedName.
+            %  @return nn is cell array of short, mnemonic names in frame-numerical order starting from frame0 |
+            %  @return previously renamed files if there are no matches with lmNamesAst.
             
             unsorted = mlsystem.DirTool(this.lmNamesAst); % filesystem-name sorted, not frame-numerically sorted
             if (isempty(unsorted.fns)) % files were previously renamed
-                n = this.standardFramedNames('*'); 
+                nn = this.standardFramedNames('*'); 
                 return
             end
             
@@ -167,7 +189,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 r = regexp(unsorted.fns{f}, this.lmNamesRE, 'names');
                 movefile(unsorted.fns{f}, this.standardFramedName(str2double(r.frame)));
             end
-            n = this.standardFramedNames(0:length(unsorted.fns)-1);
+            nn = this.standardFramedNames(0:length(unsorted.fns)-1);
         end        
 		  
  		function this = NipetBuilder(varargin)
