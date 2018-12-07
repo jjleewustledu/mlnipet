@@ -175,7 +175,8 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             error('mlnipet:ValueError', 'NipetBuilder.standardFramedNames');
         end
         function nn   = standardizeFileNames(this)
-            %% renames unsorted files matching lmNamesAst with new names specified by standardFramedName.
+            %% renames unsorted files matching lmNamesAst with new names specified by standardFramedName.  
+            %  Frame numbers are read from filenames by regexp with lmNamesAst.
             %  @return nn is cell array of short, mnemonic names in frame-numerical order starting from frame0 |
             %  @return previously renamed files if there are no matches with lmNamesAst.
             
