@@ -159,6 +159,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         end
         function nn   = standardFramedNames(this, fr)
             %% specifies standard names for given tracer, vnumber and frames.
+            %  Frame corruption is mitigated by enumerating consecutive frames starting from frame0.
             %  @param fr is numeric array of frame numbers | 
             %  @param fr is pattern-matching char to be interpreted by standardFramedName for frames starting with frame0.
             %  @return cell array standardFramedName instances.
@@ -177,6 +178,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         function nn   = standardizeFileNames(this)
             %% renames unsorted files matching lmNamesAst with new names specified by standardFramedName.  
             %  Frame numbers are read from filenames by regexp with lmNamesAst.
+            %  Frame corruption is mitigated by enumerating consecutive frames starting from frame0.
             %  @return nn is cell array of short, mnemonic names in frame-numerical order starting from frame0 |
             %  @return previously renamed files if there are no matches with lmNamesAst.
             
