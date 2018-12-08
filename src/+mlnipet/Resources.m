@@ -8,6 +8,9 @@ classdef Resources < mlpatterns.Singleton
  	%  and checked into repository /Users/jjlee/Local/src/mlcvl/mlnipet/src/+mlnipet.
  	%% It was developed on Matlab 8.5.0.197613 (R2015a) for MACI64.
  	
+    properties 
+        keepForensics = true
+    end
     
     properties (Dependent)
         rawdataDir
