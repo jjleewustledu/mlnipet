@@ -21,6 +21,17 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
     end
     
     methods (Static)
+        function this = CleanPrototype(varargin)
+            ip = inputParser;
+            addOptional(ip, 'nipetd', [], @(x) isa(x, 'mlnipet.ISessionData') || isstruct(x));
+            parse(ip, varargin{:});
+            
+            this = mlnipet.NipetBuilder(ip.Results.nipetd); 
+            deleteExisting(this.standardMergedName('fullFov', false));
+            if (isdir(ip.Results.nipetd.tracerOutputSingleFrameLocation))
+                rmdir(ip.Results.nipetd.tracerOutputSingleFrameLocation, 's');
+            end
+        end
         function this = CreatePrototypeNAC(varargin)
  			nipetd_.itr = 4;
             nipetd_.tracer = 'FDG';
@@ -29,7 +40,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC';
             nipetd_.tracerOutputSingleFrameLocation = ...
                 '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC/output/PET/single-frame';
-            nipetd_.tracerOutputLocation = ...
+            nipetd_.tracerOutputPetLocation = ...
                 '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC/output/PET';
             nipetd_.lmTag = ...
                 'createDynamicNAC';
@@ -38,13 +49,12 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             addOptional(ip, 'nipetd', nipetd_, @(x) isa(x, 'mlnipet.ISessionData') || isstruct(x));
             parse(ip, varargin{:});
             
-            pwd0 = pushd(ip.Results.nipetd.tracerOutputSingleFrameLocation);
-            this = mlnipet.NipetBuilder(ip.Results.nipetd);            
-            names = this.standardizeFileNames;
-            name = this.mergeFrames(names);
-            name = this.crop(name);
-            this = this.packageProduct(name);
-            popd(pwd0);
+            this = mlnipet.NipetBuilder(ip.Results.nipetd);  
+            if (lexist(this.standardMergedName('fullFov', false), 'file'))
+                this = this.packageProduct(this.standardMergedName('fullFov', false));
+                return
+            end
+            this = this.cleanSingleFrameLocation(ip.Results.nipetd.tracerOutputSingleFrameLocation);
         end
         function this = CreatePrototypeAC(varargin)
  			nipetd_.itr = 4;
@@ -54,7 +64,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-AC';
             nipetd_.tracerOutputSingleFrameLocation = ...
                 '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-AC/output/PET/single-frame';
-            nipetd_.tracerOutputLocation = ...
+            nipetd_.tracerOutputPetLocation = ...
                 '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-AC/output/PET';
             nipetd_.lmTag = ...
                 'createDynamic2Carney';
@@ -63,13 +73,12 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             addOptional(ip, 'nipetd', nipetd_, @(x) isa(x, 'mlnipet.ISessionData') || isstruct(x));
             parse(ip, varargin{:});
             
-            pwd0 = pushd(ip.Results.nipetd.tracerOutputSingleFrameLocation);
-            this = mlnipet.NipetBuilder(ip.Results.nipetd);            
-            names = this.standardizeFileNames;
-            name = this.mergeFrames(names);
-            name = this.crop(name);
-            this = this.packageProduct(name);
-            popd(pwd0);
+            this = mlnipet.NipetBuilder(ip.Results.nipetd);  
+            if (lexist(this.standardMergedName('fullFov', false), 'file'))
+                this = this.packageProduct(this.standardMergedName('fullFov', false));
+                return
+            end
+            this = this.cleanSingleFrameLocation(ip.Results.nipetd.tracerOutputSingleFrameLocation);
         end
     end
 
@@ -96,6 +105,17 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         
         %%
         
+        function this = cleanSingleFrameLocation(this, loc)
+            if (~isdir(loc))
+                return
+            end            
+            pwd0 = pushd(loc);        
+            names = this.standardizeFileNames;
+            name = this.mergeFrames(names);
+            name = this.crop(name);
+            this = this.packageProduct(name);
+            popd(pwd0);
+        end
         function fn   = crop(this, FN)
             
             try
@@ -120,39 +140,47 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 dispexcept(ME, 'mlnipet:RuntimeError', 'NipetBuilder.crop could not crop %s', FN);
             end
         end
-        function n    = mergeFrames(this, varargin)
+        function fn   = mergeFrames(this, varargin)
             ip = inputParser;
             addRequired(ip, 'carr', @iscell);
             addOptional(ip, 'output', this.standardMergedName, @ischar);
             parse(ip, varargin{:});
             c = ip.Results.carr;
-            n = ip.Results.output;
+            fn = ip.Results.output;
             
             assert(~isempty(c));
             cellfun(@(x) assert( ...
                 lexist(x, 'file'), 'mlnipet:RuntimeError', 'NipetBuilder.mergeFrames could not find %s', x), ...
                 c, 'UniformOutput', false);
-            mlbash(sprintf('fslmerge -t %s %s', n, cell2str(c, 'AsRows', true)));
+            mlbash(sprintf('fslmerge -t %s %s', fn, cell2str(c, 'AsRows', true)));
         end
-        function n    = standardMergedName(this)
-            %% specifies standard name for given tracer, vnumber for all available frames.
+        function fn   = standardMergedName(this, varargin)
+            %% specifies standard name for given tracer, vnumber for all available frames.  
+            %  @param fullFov is logical.
             
-            n = fullfile( ...
-                this.nipetData_.tracerOutputLocation, ...
-                sprintf('%sv%i.nii.gz', upper(this.tracer), this.vnumber));
+            ip = inputParser;
+            addParameter(ip, 'fullFov', true, @islogical);
+            parse(ip, varargin{:});            
+            if (ip.Results.fullFov)
+                tr = upper(this.tracer);
+            else
+                tr = lower(this.tracer);
+            end            
+            fn = fullfile( ...
+                this.nipetData_.tracerOutputPetLocation, sprintf('%sv%i.nii.gz', tr, this.vnumber));
         end
-        function n    = standardFramedName(this, fr)
+        function fn   = standardFramedName(this, fr)
             %% specifies standard name for given tracer, vnumber and frame.
             %  @param fr is numeric frame index | 
             %  @param fr is char for pattern matching.
             %  @return single filename.nii.gz for NIfTI.
             
             if (isnumeric(fr))
-                n = sprintf('%sv%i_frame%i.nii.gz', upper(this.tracer), this.vnumber, fr);
+                fn = sprintf('%sv%i_frame%i.nii.gz', upper(this.tracer), this.vnumber, fr);
                 return
             end
             if (ischar(fr))
-                n = sprintf('%sv%i_frame%s.nii.gz', upper(this.tracer), this.vnumber, fr);
+                fn = sprintf('%sv%i_frame%s.nii.gz', upper(this.tracer), this.vnumber, fr);
                 return
             end
             error('mlnipet:ValueError', 'NipetBuilder.standardFramedName');

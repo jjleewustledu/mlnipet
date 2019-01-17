@@ -19,6 +19,7 @@ classdef (Abstract) ISessionData
         obj = tracerNipet(this)
         loc = tracerOutputSingleFrameLocation(this)
         loc = tracerOutputLocation(this)
+        loc = tracerOutputPetLocation(this)
     end
 
 	%  Created with Newcl by John J. Lee after newfcn by Frank Gonzalez-Morphy
