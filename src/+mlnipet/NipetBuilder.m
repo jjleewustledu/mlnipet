@@ -1,5 +1,5 @@
 classdef NipetBuilder < mlpipeline.AbstractBuilder
-	%% NIPETBUILDER
+	%% NIPETBUILDER accepts reconstruction results from NIPET and prepares 4dfp for other components of construct_resolved.
 
 	%  $Revision$
  	%  was created 15-Nov-2018 19:38:27 by jjlee,
@@ -7,8 +7,6 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
  	%% It was developed on Matlab 9.4.0.813654 (R2018a) for MACI64.  Copyright 2018 John Joowon Lee.
  	
 	properties (Constant)
-        FSLROI_ARGS = '86 172 86 172 0 -1'
- 		LISTMODE_PREFIX = '1.3.12.2.1107.5.2.38.51010'
         NIPET_PREFIX = 'a' %'1.3.12.2'
     end
     
@@ -16,6 +14,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         itr
         lmNamesAst
         lmNamesRE
+        snumber
         tracer
         vnumber
     end
@@ -96,6 +95,9 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         function g = get.itr(this)
             g = this.nipetData_.itr;
         end
+        function g = get.snumber(this)
+            g = this.nipetData_.snumber;
+        end
         function g = get.tracer(this)
             g = this.nipetData_.tracer;
         end
@@ -113,13 +115,15 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             names = this.standardizeFileNames;
             name = this.mergeFrames(names);
             name = this.crop(name);
+            name = this.fillmissing(name);
             this = this.packageProduct(name);
             popd(pwd0);
         end
         function fn   = crop(this, FN)
             
+            res = mlnipet.Resources.instance;
+            
             try
-
                 % recursion
                 if (iscell(FN))
                     fn = cell(1, length(FN));
@@ -127,18 +131,28 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                         fn{i} = this.crop(FN{i});
                     end
                 end
+            catch ME
+                dispexcept(ME, 'mlnipet:RuntimeError', 'NipetBuilder.crop could not crop %s on recursion', FN);
+            end
 
+            try
                 % base case
                 [pth,fp,x] = myfileparts(FN);
                 fn = fullfile(pth, [lower(fp) x]);
                 if (~strcmp(fn, FN))
                     pwd0 = pushd(myfileparts(FN));
-                    mlbash(sprintf('fslroi %s %s %s', FN, fn, this.FSLROI_ARGS));
+                    mlbash(sprintf('fslroi %s %s %s', FN, fn, res.fslroiArgs));
                     popd(pwd0);
                 end
             catch ME
-                dispexcept(ME, 'mlnipet:RuntimeError', 'NipetBuilder.crop could not crop %s', FN);
+                dispexcept(ME, 'mlnipet:RuntimeError', 'NipetBuilder.crop could not crop %s in the base case', FN);
             end
+        end
+        function fn   = fillmissing(this, fn)
+            ic2 = mlfourd.ImagingContext2(this.ensureNiigz(fn));
+            nii = ic2.nifti;
+            nii.img = fillmissing(nii.img, 'constant', 0);
+            nii.save;
         end
         function fn   = mergeFrames(this, varargin)
             ip = inputParser;
@@ -165,7 +179,10 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 tr = upper(this.tracer);
             else
                 tr = lower(this.tracer);
-            end            
+            end
+            if (~strcmpi(this.tracer, 'FDG'))
+                tr = sprintf('%s%i', tr, this.snumber);
+            end
             fn = fullfile( ...
                 this.nipetData_.tracerOutputPetLocation, sprintf('%sv%i.nii.gz', tr, this.vnumber));
         end
@@ -175,12 +192,16 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             %  @param fr is char for pattern matching.
             %  @return single filename.nii.gz for NIfTI.
             
+            tr = upper(this.tracer);
+            if (~strcmpi(tr, 'FDG'))
+                tr = sprintf('%s%i', tr, this.snumber);
+            end
             if (isnumeric(fr))
-                fn = sprintf('%sv%i_frame%i.nii.gz', upper(this.tracer), this.vnumber, fr);
+                fn = sprintf('%sv%i_frame%i.nii.gz', tr, this.vnumber, fr);
                 return
             end
             if (ischar(fr))
-                fn = sprintf('%sv%i_frame%s.nii.gz', upper(this.tracer), this.vnumber, fr);
+                fn = sprintf('%sv%i_frame%s.nii.gz', tr, this.vnumber, fr);
                 return
             end
             error('mlnipet:ValueError', 'NipetBuilder.standardFramedName');
@@ -242,6 +263,12 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
     end
     
     methods (Access = private)
+        function fn = ensureNiigz(~, fn)
+            [~,~,x] = myfileparts(fn);
+            if (isempty(x))
+                fn = [fn '.nii.gz'];
+            end            
+        end
     end
 
 	%  Created with Newcl by John J. Lee after newfcn by Frank Gonzalez-Morphy
