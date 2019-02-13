@@ -17,6 +17,7 @@ classdef Resources < mlpatterns.Singleton
     end
     
     properties (Dependent)
+        fslroiArgs
         rawdataDir
         subjectsDir
         subjectsFolder
@@ -25,6 +26,9 @@ classdef Resources < mlpatterns.Singleton
     end
     
     methods %% GET
+        function x = get.fslroiArgs(~)
+            x = '86 172 86 172 0 -1';
+        end
         function x = get.rawdataDir(this)
             x = this.subjectsDir;
         end
