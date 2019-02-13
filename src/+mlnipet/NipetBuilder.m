@@ -156,17 +156,19 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         end
         function fn   = mergeFrames(this, varargin)
             ip = inputParser;
-            addRequired(ip, 'carr', @iscell);
+            addRequired(ip, 'carr', @(x) iscell(x) && ~isempty(x));
             addOptional(ip, 'output', this.standardMergedName, @ischar);
             parse(ip, varargin{:});
             c = ip.Results.carr;
             fn = ip.Results.output;
             
-            assert(~isempty(c));
-            cellfun(@(x) assert( ...
-                lexist(x, 'file'), 'mlnipet:RuntimeError', 'NipetBuilder.mergeFrames could not find %s', x), ...
-                c, 'UniformOutput', false);
-            mlbash(sprintf('fslmerge -t %s %s', fn, cell2str(c, 'AsRows', true)));
+            c1 = {};
+            for ci = 1:length(c)
+                if (lexist(c{ci}, 'file'))
+                    c1 = [c1 c{cdix}]; %#ok<AGROW>
+                end
+            end
+            mlbash(sprintf('fslmerge -t %s %s', fn, cell2str(c1, 'AsRows', true)));
         end
         function fn   = standardMergedName(this, varargin)
             %% specifies standard name for given tracer, vnumber for all available frames.  
