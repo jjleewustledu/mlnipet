@@ -165,7 +165,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             c1 = {};
             for ci = 1:length(c)
                 if (lexist(c{ci}, 'file'))
-                    c1 = [c1 c{cdix}]; %#ok<AGROW>
+                    c1 = [c1 c{ci}]; %#ok<AGROW>
                 end
             end
             mlbash(sprintf('fslmerge -t %s %s', fn, cell2str(c1, 'AsRows', true)));
