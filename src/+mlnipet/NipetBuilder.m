@@ -16,7 +16,6 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         lmNamesRE
         snumber
         tracer
-        vnumber
     end
     
     methods (Static)
@@ -34,13 +33,12 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         function this = CreatePrototypeNAC(varargin)
  			nipetd_.itr = 4;
             nipetd_.tracer = 'FDG';
-            nipetd_.vnumber = 1;
             nipetd_.tracerConvertedLocation = ...
-                '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC';
+                '/scratch/jjlee/Singularity/CCIR_00559/ses-E262767/FDG_DT20181005142531.000000-Converted-NAC';
             nipetd_.tracerOutputSingleFrameLocation = ...
-                '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC/output/PET/single-frame';
+                '/scratch/jjlee/Singularity/CCIR_00559/ses-E262767/FDG_DT20181005142531.000000-Converted-NAC/output/PET/single-frame';
             nipetd_.tracerOutputPetLocation = ...
-                '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-NAC/output/PET';
+                '/scratch/jjlee/Singularity/CCIR_00559/ses-E262767/FDG_DT20181005142531.000000-Converted-NAC/output/PET';
             nipetd_.lmTag = ...
                 'createDynamicNAC';
             
@@ -58,13 +56,12 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         function this = CreatePrototypeAC(varargin)
  			nipetd_.itr = 4;
             nipetd_.tracer = 'FDG';
-            nipetd_.vnumber = 1;
             nipetd_.tracerConvertedLocation = ...
-                '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-AC';
+                '/scratch/jjlee/Singularity/CCIR_00559/ses-E262767/FDG_DT20181005142531.000000-Converted-AC';
             nipetd_.tracerOutputSingleFrameLocation = ...
-                '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-AC/output/PET/single-frame';
+                '/scratch/jjlee/Singularity/CCIR_00559/ses-E262767/FDG_DT20181005142531.000000-Converted-AC/output/PET/single-frame';
             nipetd_.tracerOutputPetLocation = ...
-                '/home2/jjlee/Local/Pawel/NP995_24/V1/FDG_V1-Converted-AC/output/PET';
+                '/scratch/jjlee/Singularity/CCIR_00559/ses-E262767/FDG_DT20181005142531.000000-Converted-AC/output/PET';
             nipetd_.lmTag = ...
                 'createDynamic2Carney';
             
@@ -100,9 +97,6 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         end
         function g = get.tracer(this)
             g = this.nipetData_.tracer;
-        end
-        function g = get.vnumber(this)
-            g = this.nipetData_.vnumber;
         end
         
         %%
@@ -171,7 +165,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             mlbash(sprintf('fslmerge -t %s %s', fn, cell2str(c1, 'AsRows', true)));
         end
         function fn   = standardMergedName(this, varargin)
-            %% specifies standard name for given tracer, vnumber for all available frames.  
+            %% specifies standard name for given tracer for all available frames.  
             %  @param fullFov is logical.
             
             ip = inputParser;
@@ -186,10 +180,10 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 tr = sprintf('%s%i', tr, this.snumber);
             end
             fn = fullfile( ...
-                this.nipetData_.tracerOutputPetLocation, sprintf('%sv%i.nii.gz', tr, this.vnumber));
+                this.nipetData_.tracerOutputPetLocation, sprintf('%s.nii.gz', tr));
         end
         function fn   = standardFramedName(this, fr)
-            %% specifies standard name for given tracer, vnumber and frame.
+            %% specifies standard name for given tracer and frame.
             %  @param fr is numeric frame index | 
             %  @param fr is char for pattern matching.
             %  @return single filename.nii.gz for NIfTI.
@@ -199,17 +193,17 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 tr = sprintf('%s%i', tr, this.snumber);
             end
             if (isnumeric(fr))
-                fn = sprintf('%sv%i_frame%i.nii.gz', tr, this.vnumber, fr);
+                fn = sprintf('%s_frame%i.nii.gz', tr, fr);
                 return
             end
             if (ischar(fr))
-                fn = sprintf('%sv%i_frame%s.nii.gz', tr, this.vnumber, fr);
+                fn = sprintf('%s_frame%s.nii.gz', tr, fr);
                 return
             end
             error('mlnipet:ValueError', 'NipetBuilder.standardFramedName');
         end
         function nn   = standardFramedNames(this, fr)
-            %% specifies standard names for given tracer, vnumber and frames.
+            %% specifies standard names for given tracer and frames.
             %  Frame corruption is mitigated by enumerating consecutive frames starting from frame0.
             %  @param fr is numeric array of frame numbers | 
             %  @param fr is pattern-matching char to be interpreted by standardFramedName for frames starting with frame0.

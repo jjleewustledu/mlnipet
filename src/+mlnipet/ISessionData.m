@@ -11,7 +11,6 @@ classdef (Abstract) ISessionData
         lmTag
         outfolder
         tracer
-        vnumber
     end
     
     methods (Abstract)
