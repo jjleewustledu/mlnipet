@@ -30,7 +30,6 @@ classdef (Abstract) ISessionData
     end
     
     methods (Abstract)
-        t   = alternativeTaus(this)
         obj = ctRescaled(this)
         fn  = listmodeJson(this)    
         tag = resolveTagFrame(this, fr)
