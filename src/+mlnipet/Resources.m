@@ -10,7 +10,9 @@ classdef Resources < mlpatterns.Singleton
  	
     properties (Constant)
         FLIP1 = true % bug at interface with NIPET
+        PREFERRED_TIMEZONE = 'America/Chicago'
     end
+    
     
     properties 
         keepForensics = true
@@ -108,8 +110,8 @@ classdef Resources < mlpatterns.Singleton
 	methods (Access = protected)		  
  		function this = Resources(varargin)
  			this = this@mlpatterns.Singleton(varargin{:});
-            this.subjectsDir_ = getenv('SUBJECTS_DIR');
-            this.projectsDir_ = getenv('SUBJECTS_DIR');
+            this.subjectsDir_ = getenv('PPG_SUBJECTS_DIR');
+            this.projectsDir_ = getenv('PPG_SUBJECTS_DIR');
  		end
     end 
 
