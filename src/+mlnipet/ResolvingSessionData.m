@@ -214,6 +214,35 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
         function suff = petPointSpreadSuffix(this, varargin)
             suff = sprintf('_b%i', floor(10*mean(this.petPointSpread(varargin{:}))));
         end
+        function [dt0_,date_] = readDatetime0(this)
+            %% reads study date, study time from this.tracerListmodeDcm
+            
+            try
+                frame0 = this.frame;
+                this.frame = nan;
+                dcm = this.tracerListmodeDcm;
+                this.frame = frame0;
+                lp = mlio.LogParser.load(dcm);
+                [dateStr,idx] = lp.findNextCell('%study date (yyyy:mm:dd):=', 1);
+                 timeStr      = lp.findNextCell('%study time (hh:mm:ss GMT+00:00):=', idx);
+                dateNames     = regexp(dateStr, '%study date \(yyyy\:mm\:dd\)\:=(?<Y>\d\d\d\d)\:(?<M>\d+)\:(?<D>\d+)', 'names');
+                timeNames     = regexp(timeStr, '%study time \(hh\:mm\:ss GMT\+00\:00\)\:=(?<H>\d+)\:(?<MI>\d+)\:(?<S>\d+)', 'names');
+                Y  = str2double(dateNames.Y);
+                M  = str2double(dateNames.M);
+                D  = str2double(dateNames.D);
+                H  = str2double(timeNames.H);
+                MI = str2double(timeNames.MI);
+                S  = str2double(timeNames.S);
+
+                dt0_ = datetime(Y,M,D,H,MI,S,'TimeZone','Etc/GMT');
+                dt0_.TimeZone = mlnipet.Resources.PREFERRED_TIMEZONE;
+                date_ = datetime(Y,M,D);
+            catch ME 
+                dispwarning(ME, 'mlraichle:RuntimeWarning', ...
+                    'SessionData.readDatetime0');
+                [dt0_,date_] = readDatetime0@mlpipeline.SessionData(this);
+            end
+        end
         function tag  = resolveTagFrame(this, varargin)
             ip = inputParser;
             addRequired( ip, 'f', @isnumeric);
@@ -299,10 +328,32 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
         end 
         function obj  = tracerResolved(this, varargin)
             fqfn = fullfile( ...
-                this.sessionPath, ...
+                this.tracerPath, ...
                 sprintf('%s_%s%s', this.tracerRevision('typ', 'fp'), this.resolveTag, this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end  
+        function obj  = tracerResolvedFinal(this, varargin)
+            ip = inputParser;
+            ip.KeepUnmatched = true;
+            addParameter(ip, 'resolvedEpoch', 1:this.supEpoch, @isnumeric); 
+            addParameter(ip, 'resolvedFrame', this.supEpoch, @isnumeric); 
+            parse(ip, varargin{:});
+            
+            sessd1 = this;
+            sessd1.rnumber = 1;
+            if (~this.attenuationCorrected)
+                this.epoch = ip.Results.resolvedEpoch;
+            end
+            sessd1.epoch = ip.Results.resolvedEpoch;
+            fqfn = sprintf('%s_%s%s', ...
+                this.tracerRevision('typ', 'fqfp'), ...
+                sessd1.resolveTagFrame(ip.Results.resolvedFrame), this.filetypeExt);
+            obj  = this.fqfilenameObject(fqfn, varargin{:});
+        end
+        function obj  = tracerResolvedFinalSumt(this, varargin)
+            fqfn = sprintf('%s_sumt%s', this.tracerResolvedFinal('typ', 'fqfp'), this.filetypeExt);
+            obj  = this.fqfilenameObject(fqfn, varargin{:});
+        end
         function obj  = tracerResolvedSumt(this, varargin)
             fqfn = sprintf('%s_%s_sumt%s', this.tracerRevision('typ', 'fqfp'), this.resolveTag, this.filetypeExt);
             obj  = this.fqfilenameObject(fqfn, varargin{:});
@@ -333,9 +384,9 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
             addParameter(ip, 'tracer', this.tracer, @ischar);
             addParameter(ip, 'blurTag', mlpet.Resources.instance.suffixBlurPointSpread, @ischar);
             parse(ip, varargin{:});
-            this.tracer = ip.Results.tracer;
+            tr = ip.Results.tracer;
             
-            if (isempty(this.tracer))
+            if (isempty(tr))
                 fqfn = fullfile(this.sessionLocation('typ', 'path'), ...
                                 ['umapSynth_op_T1001' ip.Results.blurTag this.filetypeExt]);
                 obj  = this.fqfilenameObject(fqfn, varargin{:});
