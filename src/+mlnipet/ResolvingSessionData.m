@@ -9,7 +9,6 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
 	properties
         compAlignMethod = 'align_multiSpectral'
         epoch
-        fractionalImageFrameThresh = 0.01 % of median
         frameAlignMethod = 'align_2051'
         %indexOfReference % INCIPIENT BUG
         itr = 4
@@ -24,6 +23,7 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
         convertedTag
         dbgTag
         epochTag
+        fractionalImageFrameThresh % of median dynamic image-frame intensities
         frameTag    
         lmTag
         maxLengthEpoch
@@ -85,6 +85,13 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
                 g = sprintf('e%ito%i', this.epoch(1), this.epoch(end));
             end
         end     
+        function g = get.fractionalImageFrameThresh(this)
+            if (this.attenuationCorrected)
+                g = 0.02;
+            else
+                g = 0.1;
+            end
+        end
         function g = get.frameTag(this)
             assert(isnumeric(this.frame));
             if (isnan(this.frame))
