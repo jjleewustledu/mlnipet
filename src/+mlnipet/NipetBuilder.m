@@ -163,6 +163,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 end
             end
             mlbash(sprintf('fslmerge -t %s %s', fn, cell2str(c1, 'AsRows', true)));
+            mlbash(sprintf('fslmaths %s -nan %s', fn, fn));
         end
         function fn   = standardMergedName(this, varargin)
             %% specifies standard name for given tracer for all available frames.  
@@ -176,9 +177,6 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             else
                 tr = lower(this.tracer);
             end
-            if (~strcmpi(this.tracer, 'FDG'))
-                tr = sprintf('%s%i', tr, this.snumber);
-            end
             fn = fullfile( ...
                 this.nipetData_.tracerOutputPetLocation, sprintf('%s.nii.gz', tr));
         end
@@ -189,9 +187,6 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             %  @return single filename.nii.gz for NIfTI.
             
             tr = upper(this.tracer);
-            if (~strcmpi(tr, 'FDG'))
-                tr = sprintf('%s%i', tr, this.snumber);
-            end
             if (isnumeric(fr))
                 fn = sprintf('%s_frame%i.nii.gz', tr, fr);
                 return
