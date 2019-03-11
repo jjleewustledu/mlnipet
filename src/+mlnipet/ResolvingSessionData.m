@@ -351,6 +351,10 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
                         lower(ipr.tracer), this.epochTag, ip.Results.rLabel, this.regionTag, this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
+        function obj  = tracerRevisionAvgt(this, varargin)
+            fqfn = sprintf('%s_avgt%s', this.tracerRevision('typ', 'fqfp'), this.filetypeExt);
+            obj  = this.fqfilenameObject(fqfn, varargin{:});
+        end     
         function obj  = tracerRevisionSumt(this, varargin)
             fqfn = sprintf('%s_sumt%s', this.tracerRevision('typ', 'fqfp'), this.filetypeExt);
             obj  = this.fqfilenameObject(fqfn, varargin{:});
