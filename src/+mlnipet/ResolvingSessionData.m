@@ -298,7 +298,8 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
         function obj  = tracerResolved(this, varargin)
             fqfn = fullfile( ...
                 this.tracerPath, ...
-                sprintf('%s_%s%s', this.tracerRevision('typ', 'fp'), this.resolveTag, this.filetypeExt));
+                sprintf('%s_%s%s', this.tracerRevision('typ', 'fp'), ...
+                        this.resolveTag, this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end  
         function obj  = tracerResolvedFinal(this, varargin)
@@ -315,8 +316,8 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
             end
             sessd1.epoch = ip.Results.resolvedEpoch;
             fqfn = sprintf('%s_%s%s', ...
-                this.tracerRevision('typ', 'fqfp'), ...
-                sessd1.resolveTagFrame(ip.Results.resolvedFrame), this.filetypeExt);
+                           this.tracerRevision('typ', 'fqfp'), ...
+                           sessd1.resolveTagFrame(ip.Results.resolvedFrame), this.filetypeExt);
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function obj  = tracerResolvedFinalAvgt(this, varargin)
