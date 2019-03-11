@@ -32,8 +32,6 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
         rnumber
         supEpoch
         t4ResolveBuilderBlurArg
-        taus
-        times
         useNiftyPet
     end
     
@@ -166,21 +164,6 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
         end  
         function g = get.t4ResolveBuilderBlurArg(this)
             g = this.tracerBlurArg;
-        end
-        function g = get.taus(this)
-            if (lexist(this.listmodeJson, 'file'))
-                j = jsondecode(fileread(this.listmodeJson));
-                g = j.taus';
-                return
-            end
-            g = this.alternativeTaus;
-        end
-        function g = get.times(this)
-            t = this.taus;
-            g = zeros(size(t));
-            for ig = 1:length(t)-1
-                g(ig+1) = sum(t(1:ig));
-            end
         end   
         function g = get.useNiftyPet(~)
             g = true;
@@ -213,11 +196,6 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
                 this.sessionLocation('typ', 'path'), ...
                 sprintf('ctRescaled%s', this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
-        end
-        function f    = listmodeJson(this)
-            dt = mlsystem.DirTool(fullfile(this.tracerOutputPetLocation, [upper(this.tracer) 'dt*.json']));
-            assert(1 == dt.length);
-            f = dt.fqfns{1};
         end
         function p    = petPointSpread(~, varargin)
             inst = mlsiemens.MMRRegistry.instance;
@@ -270,12 +248,6 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
             ipr = this.iprLocation(varargin{:});
             loc = locationType(ipr.typ, this.tracerPath);
         end
-        function obj  = tracerListmodeDcm(this, varargin)
-            dt   = mlsystem.DirTool(fullfile(this.tracerConvertedLocation, 'LM', '*.dcm'));
-            assert(1 == length(dt.fqfns));
-            fqfn = dt.fqfns{1};            
-            obj  = this.fqfilenameObject(fqfn, varargin{:});
-        end
         function loc  = tracerLocation(this, varargin)
             ipr = this.iprLocation(varargin{:});
             if (isempty(ipr.tracer))
@@ -309,25 +281,10 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
                 tr = lower(ipr.tracer);
             end
             fqfn = fullfile( ...
-                this.tracerConvertedLocation('tracer', ipr.tracer, 'snumber', ipr.snumber), ...
+                this.tracerLocation('tracer', ipr.tracer, 'snumber', ipr.snumber), ...
                 'output', 'PET', ...
                 sprintf('%s.nii.gz', tr));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
-        end
-        function loc  = tracerOutputLocation(this, varargin)
-            ipr = this.iprLocation(varargin{:});
-            loc = locationType(ipr.typ, ...
-                fullfile(this.tracerConvertedLocation(varargin{:}), this.outfolder, ''));
-        end
-        function loc  = tracerOutputPetLocation(this, varargin)
-            ipr = this.iprLocation(varargin{:});
-            loc = locationType(ipr.typ, ...
-                fullfile(this.tracerConvertedLocation(varargin{:}), this.outfolder, 'PET', ''));
-        end
-        function loc  = tracerOutputSingleFrameLocation(this, varargin)
-            ipr = this.iprLocation(varargin{:});
-            loc = locationType(ipr.typ, ...
-                fullfile(this.tracerOutputPetLocation(varargin{:}), 'single-frame', ''));
         end
         function obj  = tracerPristine(this, varargin)
             this.epoch = [];
@@ -449,12 +406,6 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
         resolveTag_
         rnumber_
         supEpoch_
-    end
-    
-    methods (Access = protected)
-        function t = alternativeTaus(this) %#ok<STOUT,MANU>
-            error('mlnipet:NotImplementedError', 'ResolvingSessionData.alternativeTaus');
-        end
     end
 
 	%  Created with Newcl by John J. Lee after newfcn by Frank Gonzalez-Morphy
