@@ -41,7 +41,7 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
         
         %% GET/SET
         
-        function g = get.attenuationTag(this)
+        function g    = get.attenuationTag(this)
             if (this.attenuationCorrected)
                 if (this.absScatterCorrected)
                     g = 'Abs';
@@ -52,21 +52,21 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
             end
             g = 'NAC';
         end
-        function g = get.compositeT4ResolveBuilderBlurArg(this)
+        function g    = get.compositeT4ResolveBuilderBlurArg(this)
             if (~this.attenuationCorrected)
                 g = this.umapBlurArg;
             else
                 g = this.tracerBlurArg;
             end
         end
-        function g = get.convertedTag(this)
+        function g    = get.convertedTag(this)
             if (~isnan(this.frame_))
                 g = sprintf('Converted-Frame%i-%s', this.frame_, this.attenuationTag);
                 return
             end
             g = ['Converted-' this.attenuationTag];
         end
-        function g = get.dbgTag(~)
+        function g    = get.dbgTag(~)
             if (~isempty(getenv('DEBUG')))
                 g = '_DEBUG';
             else
@@ -85,14 +85,19 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
                 g = sprintf('e%ito%i', this.epoch(1), this.epoch(end));
             end
         end     
-        function g = get.fractionalImageFrameThresh(this)
+        function g    = get.fractionalImageFrameThresh(this)
             if (this.attenuationCorrected)
-                g = 0.02;
+                g = this.fractionalImageFrameThresh_;
             else
-                g = 0.1;
+                g = 5*this.fractionalImageFrameThresh_;
             end
         end
-        function g = get.frameTag(this)
+        function this = set.fractionalImageFrameThresh(this, s)
+            assert(isnumeric(s));
+            assert(s < 1);
+            this.fractionalImageFrameThresh_ = s;
+        end
+        function g    = get.frameTag(this)
             assert(isnumeric(this.frame));
             if (isnan(this.frame))
                 g = '';
@@ -100,21 +105,21 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
             end
             g = sprintf('_frame%i', this.frame);
         end   
-        function g = get.lmTag(this)
+        function g    = get.lmTag(this)
             if (~this.attenuationCorrected)
                 g = 'createDynamicNAC';
                 return
             end
             g = 'createDynamic2Carney';
         end
-        function g = get.maxLengthEpoch(this)
+        function g    = get.maxLengthEpoch(this)
             if (~this.attenuationCorrected)
                 g = 8;
                 return
             end 
-            g = 24;
+            g = 16;
         end
-        function g = get.regionTag(this)
+        function g    = get.regionTag(this)
             if (isempty(this.region))
                 g = '';
                 return
@@ -419,17 +424,20 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
  			this = this@mlpipeline.SessionData(varargin{:});
             ip = inputParser;
             ip.KeepUnmatched = true;           
+            addParameter(ip, 'fractionalImageFrameThresh', 0.02, @isnumeric);
             addParameter(ip, 'resolveTag', '', @ischar);
-            addParameter(ip, 'rnumber', 1,     @isnumeric);
+            addParameter(ip, 'rnumber', 1, @isnumeric);
             parse(ip, varargin{:});             
+            this.fractionalImageFrameThresh_ = ip.Results.fractionalImageFrameThresh;
             this.resolveTag_ = ip.Results.resolveTag;
-            this.rnumber_    = ip.Results.rnumber;
+            this.rnumber_ = ip.Results.rnumber;
  		end
     end 
     
     %% PROTECTED
     
     properties (Access = protected)
+        fractionalImageFrameThresh_
         resolveTag_
         rnumber_
         supEpoch_
