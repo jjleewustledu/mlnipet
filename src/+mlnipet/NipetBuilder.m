@@ -32,8 +32,6 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         end
         function this = CreatePrototypeNAC(varargin)
  			nipetd_.itr = 4;
-            nipetd_.listmodeFqfp = ...
-                '/scratch/jjlee/Singularity/CCIR_00559/ses-E262767/FDG_DT20181005142531.000000-Converted-NAC/LM/lm_stub';
             nipetd_.tracer = 'FDG';
             nipetd_.tracerConvertedLocation = ...
                 '/scratch/jjlee/Singularity/CCIR_00559/ses-E262767/FDG_DT20181005142531.000000-Converted-NAC';
@@ -57,8 +55,6 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         end
         function this = CreatePrototypeAC(varargin)
  			nipetd_.itr = 4;
-            nipetd_.listmodeFqfp = ...
-                '/scratch/jjlee/Singularity/CCIR_00559/ses-E262767/FDG_DT20181005142531.000000-Converted-AC/LM/lm_stub';
             nipetd_.tracer = 'FDG';
             nipetd_.tracerConvertedLocation = ...
                 '/scratch/jjlee/Singularity/CCIR_00559/ses-E262767/FDG_DT20181005142531.000000-Converted-AC';
