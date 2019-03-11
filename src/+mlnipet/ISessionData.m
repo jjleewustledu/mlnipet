@@ -30,10 +30,12 @@ classdef (Abstract) ISessionData
     end
     
     methods (Abstract)
-        obj = ctRescaled(this)
-        fn  = listmodeJson(this)    
+        obj = ctRescaled(this)  
         tag = resolveTagFrame(this, fr)
         loc = tracerConvertedLocation(this)
+        fn  = tracerListmodeBf(this)  
+        fn  = tracerListmodeDcm(this)  
+        fn  = tracerListmodeJson(this)  
         loc = tracerLocation(this)
         obj = tracerNipet(this)
         loc = tracerOutputLocation(this)
