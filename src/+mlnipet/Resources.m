@@ -19,6 +19,7 @@ classdef Resources < mlpatterns.Singleton
     end
     
     properties (Dependent)
+        debug
         dicomExtension
         fslroiArgs
         projectsDir
@@ -30,47 +31,73 @@ classdef Resources < mlpatterns.Singleton
         
         %% GET, SET
         
+        function g = get.debug(~)
+            g = getenv('DEBUG');
+            g = ~isempty(g);
+        end
+        function     set.debug(~, s)
+            if (isempty(s))
+                setenv('DEBUG', '');
+                return
+            end
+            if (islogical(s))
+                if (s)
+                    s = 'TRUE';
+                else
+                    s = '';
+                end
+            end
+            if (isnumeric(s))
+                if (s ~= 0)
+                    s = 'TRUE';
+                else
+                    s = '';
+                end
+            end
+            assert(ischar(s));
+            setenv('DEBUG', s);            
+        end
         function g = get.dicomExtension(~)
             g = '.dcm';
         end
-        function x = get.fslroiArgs(~)
-            x = '86 172 86 172 0 -1';
+        function g = get.fslroiArgs(~)
+            g = '86 172 86 172 0 -1';
         end
-        function x = get.projectsDir(this)
-            x = this.projectsDir_;
+        function g = get.projectsDir(~)
+            g = getenv('PPG_SUBJECTS_DIR');
         end        
-        function     set.projectsDir(this, x)
-            assert(ischar(x));
-            this.projectsDir_ = x;
+        function     set.projectsDir(~, s)
+            assert(isdir(s));
+            setenv('PPG_SUBJECTS_DIR', s);
         end
-        function x = get.subjectsDir(this)
-            x = this.subjectsDir_;
+        function g = get.subjectsDir(~)
+            g = getenv('PPG_SUBJECTS_DIR');
         end        
-        function     set.subjectsDir(this, x)
-            assert(ischar(x));
-            this.subjectsDir_ = x;
+        function     set.subjectsDir(~, s)
+            assert(isdir(s));
+            setenv('PPG_SUBJECTS_DIR', s);
         end
-        function x = get.YeoDir(this)
-            x = this.subjectsDir;
+        function g = get.YeoDir(this)
+            g = this.subjectsDir;
         end
         
         %%
         
-        function        diaryOff(~)
+        function       diaryOff(~)
             diary off;
         end
-        function        diaryOn(this, varargin)
+        function       diaryOn(this, varargin)
             ip = inputParser;
             addOptional(ip, 'path', this.subjectsDir, @isdir);
             parse(ip, varargin{:});            
             diary( ...
                 fullfile(ip.Results.path, sprintf('%s_diary_%s.log', mfilename, mydatetimestr(now))));
         end
-        function tf   = isChpcHostname(~)
+        function tf  = isChpcHostname(~)
             [~,hn] = mlbash('hostname');
-            tf = lstrfind(hn, 'gpu') || lstrfind(hn, 'node') || lstrfind(hn, 'login');
+            tf = lstrfind(hn, 'gpu') || lstrfind(hn, 'node') || lstrfind(hn, 'login') || lstrfind(hn, 'cluster');
         end
-        function loc  = saveWorkspace(this, varargin)
+        function loc = saveWorkspace(this, varargin)
             ip = inputParser;
             addOptional(ip, 'path', this.subjectsDir, @isdir);
             parse(ip, varargin{:});
@@ -102,16 +129,9 @@ classdef Resources < mlpatterns.Singleton
     
     %% PROTECTED
     
-    properties (Access = protected)
-        projectsDir_
-        subjectsDir_
-    end
-    
 	methods (Access = protected)		  
  		function this = Resources(varargin)
  			this = this@mlpatterns.Singleton(varargin{:});
-            this.subjectsDir_ = getenv('PPG_SUBJECTS_DIR');
-            this.projectsDir_ = getenv('PPG_SUBJECTS_DIR');
  		end
     end 
 
