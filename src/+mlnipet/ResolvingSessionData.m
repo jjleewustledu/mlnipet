@@ -138,11 +138,12 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
                 g = this.resolveTag_;
                 return
             end
-            if (isempty(this.tracer_))
-                g = '';
-                return
+            try
+                g = ['op_' this.tracerRevision('typ','fp')];
+            catch ME
+                handwarning(ME);
+                g = 'op_reference';
             end
-            g = ['op_' this.tracerRevision('typ','fp')];
         end
         function this = set.resolveTag(this, s)
             assert(ischar(s));
