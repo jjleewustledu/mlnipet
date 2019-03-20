@@ -368,7 +368,7 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
         function obj  = umapSynth(this, varargin)
             ip = inputParser;
             ip.KeepUnmatched = true;
-            addParameter(ip, 'tracer', this.tracer_, @ischar);
+            addParameter(ip, 'tracer', this.tracer, @ischar);
             addParameter(ip, 'blurTag', mlpet.Resources.instance.suffixBlurPointSpread, @ischar);
             parse(ip, varargin{:});
             tr = ip.Results.tracer;
