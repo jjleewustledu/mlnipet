@@ -156,7 +156,7 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
             assert(isnumeric(r));
             this.rnumber_ = r;
         end  
-        function g = get.supEpoch(this)
+        function g    = get.supEpoch(this)
             if (~isempty(this.supEpoch_))
                 g = this.supEpoch_;
                 return
@@ -167,10 +167,10 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
             assert(isnumeric(s));
             this.supEpoch_ = s;
         end  
-        function g = get.t4ResolveBuilderBlurArg(this)
+        function g    = get.t4ResolveBuilderBlurArg(this)
             g = this.tracerBlurArg;
         end   
-        function g = get.useNiftyPet(~)
+        function g    = get.useNiftyPet(~)
             g = true;
         end 
         
@@ -301,8 +301,13 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end 
         function obj  = tracerResolved(this, varargin)
+            if (this.attenuationCorrected) %% FIXME, KLUDGE
+                pth = this.tracerLocation;
+            else
+                pth = this.tracerPath;
+            end
             fqfn = fullfile( ...
-                this.tracerPath, ...
+                pth, ...
                 sprintf('%s_%s%s', this.tracerRevision('typ', 'fp'), ...
                         this.resolveTag, this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
