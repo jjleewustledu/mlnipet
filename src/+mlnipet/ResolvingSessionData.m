@@ -10,6 +10,7 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
         compAlignMethod = 'align_multiSpectral'
         epoch
         frameAlignMethod = 'align_2051'
+        ignoreFinishMark = false
         %indexOfReference % INCIPIENT BUG
         itr = 4
         outfolder = 'output'
