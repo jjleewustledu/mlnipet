@@ -64,7 +64,7 @@ classdef Resources < mlpatterns.Singleton
             g = '86 172 86 172 0 -1';
         end
         function g = get.projectsDir(~)
-            g = getenv('PPG_SUBJECTS_DIR');
+            g = getenv('PPG_PROJECTS_DIR');
         end        
         function     set.projectsDir(~, s)
             assert(isdir(s));

@@ -1,4 +1,4 @@
-classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISessionData
+classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
 	%% RESOLVINGSESSIONDATA  
 
 	%  $Revision$
@@ -403,7 +403,7 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData & mlnipet.ISes
             % @param 'resolveTag' is char
             % @param 'rnumber'    is numeric
             
- 			this = this@mlpipeline.SessionData(varargin{:});
+ 			this = this@mlpipeline.BidsSessionData(varargin{:});
             ip = inputParser;
             ip.KeepUnmatched = true;           
             addParameter(ip, 'fractionalImageFrameThresh', 0.02, @isnumeric);
