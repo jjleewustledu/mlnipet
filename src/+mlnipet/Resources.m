@@ -64,18 +64,18 @@ classdef Resources < mlpatterns.Singleton
             g = '86 172 86 172 0 -1';
         end
         function g = get.projectsDir(~)
-            g = getenv('PPG_PROJECTS_DIR');
+            g = getenv('PROJECTS_DIR');
         end        
         function     set.projectsDir(~, s)
             assert(isdir(s));
-            setenv('PPG_SUBJECTS_DIR', s);
+            setenv('PROJECTS_DIR', s);
         end
         function g = get.subjectsDir(~)
-            g = getenv('PPG_SUBJECTS_DIR');
+            g = getenv('SUBJECTS_DIR');
         end        
         function     set.subjectsDir(~, s)
             assert(isdir(s));
-            setenv('PPG_SUBJECTS_DIR', s);
+            setenv('SUBJECTS_DIR', s);
         end
         function g = get.YeoDir(this)
             g = this.subjectsDir;
@@ -88,7 +88,7 @@ classdef Resources < mlpatterns.Singleton
         end
         function       diaryOn(this, varargin)
             ip = inputParser;
-            addOptional(ip, 'path', this.subjectsDir, @isdir);
+            addOptional(ip, 'path', this.projectsDir, @isdir);
             parse(ip, varargin{:});            
             diary( ...
                 fullfile(ip.Results.path, sprintf('%s_diary_%s.log', mfilename, mydatetimestr(now))));
@@ -99,7 +99,7 @@ classdef Resources < mlpatterns.Singleton
         end
         function loc = saveWorkspace(this, varargin)
             ip = inputParser;
-            addOptional(ip, 'path', this.subjectsDir, @isdir);
+            addOptional(ip, 'path', this.projectsDir, @isdir);
             parse(ip, varargin{:});
             loc = fullfile(ip.Results.path, sprintf('%s_workspace_%s.mat', mfilename, mydatetimestr(now)));
             save(loc);
