@@ -252,7 +252,7 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
         end       
         function loc  = tracerConvertedLocation(this, varargin)
             ipr = this.iprLocation(varargin{:});
-            loc = locationType(ipr.typ, this.tracerPath);
+            loc = locationType(ipr.typ, this.scanPath);
         end
         function loc  = tracerLocation(this, varargin)
             ipr = this.iprLocation(varargin{:});
@@ -261,7 +261,7 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
                 return
             end
             loc = locationType(ipr.typ, ...
-                  fullfile(this.tracerPath, capitalize(this.epochTag), ''));
+                  fullfile(this.scanPath, capitalize(this.epochTag), ''));
         end
         function obj  = tracerEpoch(this, varargin)
             %% TRACEREPOCH is tracerRevision without the rnumber label.
@@ -305,7 +305,7 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
             if (this.attenuationCorrected) %% FIXME, KLUDGE
                 pth = this.tracerLocation;
             else
-                pth = this.tracerPath;
+                pth = this.scanPath;
             end
             fqfn = fullfile( ...
                 pth, ...
@@ -386,7 +386,7 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
                             this.T1001('typ', 'fp'), ip.Results.blurTag, this.filetypeExt));
             else
                 fqfn = fullfile( ...
-                    this.tracerPath, ...
+                    this.scanPath, ...
                     sprintf('umapSynth_op_%s%s', ...
                             this.tracerRevision('typ', 'fp'), this.filetypeExt));
             end
@@ -403,7 +403,7 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
             % @param 'resolveTag' is char
             % @param 'rnumber'    is numeric
             
- 			this = this@mlpipeline.BidsSessionData(varargin{:});
+ 			this = this@mlpipeline.SessionData(varargin{:});
             ip = inputParser;
             ip.KeepUnmatched = true;           
             addParameter(ip, 'fractionalImageFrameThresh', 0.02, @isnumeric);
