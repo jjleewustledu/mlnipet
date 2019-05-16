@@ -23,6 +23,7 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
         compositeT4ResolveBuilderBlurArg
         convertedTag
         dbgTag
+        doseAdminDatetimeTag
         epochTag
         fractionalImageFrameThresh % of median dynamic image-frame intensities
         frameTag    
@@ -69,6 +70,13 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
             if (~isempty(getenv('DEBUG')))
                 g = '_DEBUG';
             else
+                g = '';
+            end
+        end
+        function g    = get.doseAdminDatetimeTag(this)
+            re = regexp(this.scanFolder, '\w+_(?<dttag>DT\d+).\d+\w*', 'names');
+            g = re.dttag;
+            if (isempty(g))
                 g = '';
             end
         end
