@@ -1,4 +1,4 @@
-classdef Resources < mlpatterns.Singleton
+classdef Resources < handle & mlpatterns.Singleton % & mlnipet.IResources
 	%% RESOURCES 
 
 	%  $Revision$
@@ -15,6 +15,8 @@ classdef Resources < mlpatterns.Singleton
     
     
     properties 
+        atlVoxelSize = 222
+        comments = ''
         keepForensics = true
     end
     
@@ -22,9 +24,6 @@ classdef Resources < mlpatterns.Singleton
         debug
         dicomExtension
         fslroiArgs
-        projectsDir
-        subjectsDir
-        YeoDir
     end
     
     methods 
@@ -62,23 +61,6 @@ classdef Resources < mlpatterns.Singleton
         end
         function g = get.fslroiArgs(~)
             g = '86 172 86 172 0 -1';
-        end
-        function g = get.projectsDir(~)
-            g = getenv('PROJECTS_DIR');
-        end        
-        function     set.projectsDir(~, s)
-            assert(isdir(s));
-            setenv('PROJECTS_DIR', s);
-        end
-        function g = get.subjectsDir(~)
-            g = getenv('SUBJECTS_DIR');
-        end        
-        function     set.subjectsDir(~, s)
-            assert(isdir(s));
-            setenv('SUBJECTS_DIR', s);
-        end
-        function g = get.YeoDir(this)
-            g = this.subjectsDir;
         end
         
         %%
