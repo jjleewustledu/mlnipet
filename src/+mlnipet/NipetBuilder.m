@@ -21,7 +21,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
     methods (Static)
         function this = CleanPrototype(varargin)
             ip = inputParser;
-            addOptional(ip, 'nipetd', [], @(x) isa(x, 'mlnipet.ISessionData') || isstruct(x));
+            addOptional(ip, 'nipetd', [], @(x) isa(x, 'mlpipeline.ISessionData') || isstruct(x));
             parse(ip, varargin{:});
             
             this = mlnipet.NipetBuilder(ip.Results.nipetd); 
@@ -43,7 +43,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 'createDynamicNAC';
             
             ip = inputParser;
-            addOptional(ip, 'nipetd', nipetd_, @(x) isa(x, 'mlnipet.ISessionData') || isstruct(x));
+            addOptional(ip, 'nipetd', nipetd_, @(x) isa(x, 'mlpipeline.ISessionData') || isstruct(x));
             parse(ip, varargin{:});
             
             this = mlnipet.NipetBuilder(ip.Results.nipetd);  
@@ -66,7 +66,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 'createDynamic2Carney';
             
             ip = inputParser;
-            addOptional(ip, 'nipetd', nipetd_, @(x) isa(x, 'mlnipet.ISessionData') || isstruct(x));
+            addOptional(ip, 'nipetd', nipetd_, @(x) isa(x, 'mlpipeline.ISessionData') || isstruct(x));
             parse(ip, varargin{:});
             
             this = mlnipet.NipetBuilder(ip.Results.nipetd);  
