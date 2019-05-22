@@ -31,6 +31,8 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             end
         end
         function this = CreatePrototypeNAC(varargin)
+            
+            % prototypical values, inconsequential if passing ISessionData
  			nipetd_.itr = 4;
             nipetd_.tracer = 'FDG';
             nipetd_.tracerConvertedLocation = ...
@@ -54,6 +56,8 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             this = this.cleanSingleFrameLocation(ip.Results.nipetd.tracerOutputSingleFrameLocation);
         end
         function this = CreatePrototypeAC(varargin)
+            
+            % prototypical values, inconsequential if passing ISessionData
  			nipetd_.itr = 4;
             nipetd_.tracer = 'FDG';
             nipetd_.tracerConvertedLocation = ...
