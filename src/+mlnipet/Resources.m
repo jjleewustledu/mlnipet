@@ -1,4 +1,4 @@
-classdef Resources < handle & mlpatterns.Singleton % & mlnipet.IResources
+classdef Resources < handle & mlpatterns.Singleton
 	%% RESOURCES 
 
 	%  $Revision$
