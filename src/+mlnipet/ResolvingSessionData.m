@@ -401,6 +401,8 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end    
         function obj  = umapSynthOpT1001(this, varargin)
+            %  @returns umapSynth_op_T1001_b43 as fqfilenameObject with default blurTag->'_b43'
+            
             obj  = this.umapSynth('tracer', '', varargin{:});
         end  
         function obj  = umapSynthOpTracer(this, varargin)
