@@ -87,7 +87,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
                     end
                 end
             end
-            if (~lexist('T1001_to_TRIO_Y_NDC_t4', 'file'))
+            if (~lexist('T1001_to_TRIO_Y_NDC_t4', 'file')) % redundant with prepareMprToAtlasT4 && ~sessionData.noclobber
                 fv.msktgenMprage('T1001');
             end
             popd(pwd0);
