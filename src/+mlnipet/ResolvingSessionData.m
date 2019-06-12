@@ -239,7 +239,7 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
                 S  = str2double(timeNames.S);
 
                 dt0_ = datetime(Y,M,D,H,MI,S,'TimeZone','Etc/GMT');
-                dt0_.TimeZone = mlnipet.Resources.PREFERRED_TIMEZONE;
+                dt0_.TimeZone = mlpipeline.ResourcesRegistry.instance().preferredTimeZone;
                 date_ = datetime(Y,M,D);
             catch ME 
                 dispwarning(ME, 'mlraichle:RuntimeWarning', ...
@@ -383,7 +383,7 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
             ip = inputParser;
             ip.KeepUnmatched = true;
             addParameter(ip, 'tracer', this.tracer, @ischar);
-            addParameter(ip, 'blurTag', mlpet.Resources.instance.suffixBlurPointSpread, @ischar);
+            addParameter(ip, 'blurTag', mlnipet.ResourcesRegistyr.instance().suffixPetPointSpread, @ischar);
             parse(ip, varargin{:});
             tr = ip.Results.tracer;
             

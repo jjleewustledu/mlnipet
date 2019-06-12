@@ -24,7 +24,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             %  @return umap files generated per motionUncorrectedUmap, ready for use by instanceConstructResolvedAC
             %  @return this.sessionData.attenuationCorrection == false.
                       
-            inst = mlnipet.Resources.instance;
+            inst = mlpipeline.ResourcesRegistry.instance();
             inst.keepForensics = false;
             this = mlnipet.CommonTracerDirector(mlpet.TracerResolveBuilder(varargin{:}));   
             this = this.instanceCleanResolved;
@@ -49,7 +49,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             this.fastFilesystemTeardownProject;
         end
         function ic2  = flipKLUDGE____(ic2)
-            if (mlnipet.Resources.instance.FLIP1)
+            if (mlnipet.ResourcesRegistry.instance().FLIP1)
                 assert(isa(ic2, 'mlfourd.ImagingContext2'), 'mlnipet:TypeError', 'TracerDirector2.flipKLUDGE____');
                 warning('mlnipet:RuntimeWarning', 'KLUDGE:TracerDirector2.flipKLUDGE____ is active');
                 ic2 = ic2.flip(1);
@@ -143,7 +143,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             end
             
             % redirect projectsDir
-            inst = mlraichle.RaichleRegistry.instance;
+            inst = mlraichle.StudyRegistry.instance;
             inst.projectsDir = fullfile(this.FAST_FILESYSTEM, getenv('PROJECTS_DIR'));
             inst.subjectsDir = fullfile(this.FAST_FILESYSTEM, getenv('SUBJECTS_DIR'));
             
@@ -171,7 +171,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             end
             
             % redirect projectsDir
-            inst = mlraichle.RaichleRegistry.instance;
+            inst = mlraichle.StudyRegistry.instance;
             inst.projectsDir = fullfile(getenv('PROJECTS_DIR'));
             inst.subjectsDir = fullfile(getenv('SUBJECTS_DIR'));
         end
@@ -215,7 +215,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             this.builder_ = this.builder_.reconstituteFramesAC2;
             this.builder_ = this.builder_.avgtProduct;
             this.builder_.logger.save; 
-            if (mlnipet.Resources.instance.debug)
+            if (mlpipeline.ResourcesRegistry.instance().debug)
                 save('mlnipet_CommonTracerDirector_instanceConstructResolvedAC.mat');
             else                
                 this.builder_.deleteWorkFiles;
@@ -233,7 +233,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             this.builder_.logger.save;       
             p = this.flipKLUDGE____(this.builder_.product); % KLUDGE:  bug at interface with NIPET
             p.save;
-            if (mlnipet.Resources.instance.debug)
+            if (mlpipeline.ResourcesRegistry.instance().debug)
                 save('mlnipet_CommonTracerDirector_instanceConstructResolvedNAC.mat');
             else
                 this.builder_.deleteWorkFiles;

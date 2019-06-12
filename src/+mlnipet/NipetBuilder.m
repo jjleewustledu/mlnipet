@@ -119,7 +119,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         end
         function fn   = crop(this, FN)
             
-            res = mlnipet.Resources.instance;
+            res = mlnipet.ResourcesRegistry.instance();
             
             try
                 % recursion
