@@ -11,7 +11,9 @@ classdef (Abstract) StudyRegistry < handle & mlpet.StudyRegistry
     end
     
     properties (Dependent)
-        fslroiArgs
+        fslroiArgs        
+        projectsDir
+        subjectsDir
     end
     
     methods
@@ -20,6 +22,20 @@ classdef (Abstract) StudyRegistry < handle & mlpet.StudyRegistry
         
         function g = get.fslroiArgs(this)
             g = mlnipet.ResourcesRegistry.instance().fslroiArgs;
+        end        
+        function g = get.projectsDir(~)
+            g = getenv('PROJECTS_DIR');
+        end        
+        function     set.projectsDir(~, s)
+            assert(isdir(s));
+            setenv('PROJECTS_DIR', s);
+        end
+        function g = get.subjectsDir(~)
+            g = getenv('SUBJECTS_DIR');
+        end        
+        function     set.subjectsDir(~, s)
+            assert(isdir(s));
+            setenv('SUBJECTS_DIR', s);
         end
         
     end
@@ -31,8 +47,9 @@ classdef (Abstract) StudyRegistry < handle & mlpet.StudyRegistry
  			%% STUDYREGISTRY
  			%  @param .
 
- 			this = this@mlpet.StudyRegistry(varargin{:});
- 		end
+ 			this = this@mlpet.StudyRegistry(varargin{:});            
+            this.atlVoxelSize = 222;
+        end        
     end
 
 	%  Created with Newcl by John J. Lee after newfcn by Frank Gonzalez-Morphy

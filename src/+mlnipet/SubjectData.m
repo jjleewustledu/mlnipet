@@ -20,7 +20,6 @@ classdef SubjectData < mlpipeline.SubjectData
  	
 	properties (Dependent)
         projectData
-        projectsDir
  		subjectsStruct 		
  	end
 
@@ -30,9 +29,6 @@ classdef SubjectData < mlpipeline.SubjectData
 
         function g = get.projectData(this)
             g = this.projectData_;
-        end
-        function g = get.projectsDir(this)
-            g = this.registry_.projectsDir;
         end
         function g = get.subjectsStruct(this)
             g = this.subjectsStruct_;
