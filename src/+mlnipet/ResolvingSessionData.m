@@ -1,4 +1,4 @@
-classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
+classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
 	%% RESOLVINGSESSIONDATA  
 
 	%  $Revision$
@@ -7,13 +7,6 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
  	%% It was developed on Matlab 9.2.0.538062 (R2017a) for MACI64.  Copyright 2017 John Joowon Lee.
  	    
 	properties
-        compAlignMethod = 'align_multiSpectral'
-        epoch
-        frameAlignMethod = 'align_2051'
-        ignoreFinishMark = false
-        %indexOfReference % INCIPIENT BUG
-        itr = 4
-        outfolder = 'output'
         tracerBlurArg = 7.5
         umapBlurArg = 1.5
     end
@@ -22,17 +15,9 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
         attenuationTag
         compositeT4ResolveBuilderBlurArg
         convertedTag
-        dbgTag
         doseAdminDatetimeTag
-        epochTag
         fractionalImageFrameThresh % of median dynamic image-frame intensities
-        frameTag    
         lmTag
-        maxLengthEpoch
-        regionTag
-        resolveTag
-        rnumber
-        supEpoch
         t4ResolveBuilderBlurArg
         useNiftyPet
     end
@@ -66,13 +51,6 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
             end
             g = ['Converted-' this.attenuationTag];
         end
-        function g    = get.dbgTag(~)
-            if (~isempty(getenv('DEBUG')))
-                g = '_DEBUG';
-            else
-                g = '';
-            end
-        end
         function g    = get.doseAdminDatetimeTag(this)
             re = regexp(this.scanFolder, '\w+_(?<dttag>DT\d+).\d+\w*', 'names');
             g = re.dttag;
@@ -80,18 +58,6 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
                 g = '';
             end
         end
-        function g    = get.epochTag(this)
-            if (isempty(this.epoch))
-                g = '';
-                return
-            end
-            assert(isnumeric(this.epoch));
-            if (1 == length(this.epoch))
-                g = sprintf('e%i', this.epoch);
-            else
-                g = sprintf('e%ito%i', this.epoch(1), this.epoch(end));
-            end
-        end     
         function g    = get.fractionalImageFrameThresh(this)
             if (this.attenuationCorrected)
                 g = this.fractionalImageFrameThresh_;
@@ -104,78 +70,13 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
             assert(s < 1);
             this.fractionalImageFrameThresh_ = s;
         end
-        function g    = get.frameTag(this)
-            assert(isnumeric(this.frame));
-            if (isnan(this.frame))
-                g = '';
-                return
-            end
-            g = sprintf('_frame%i', this.frame);
-        end   
         function g    = get.lmTag(this)
             if (~this.attenuationCorrected)
                 g = 'createDynamicNAC';
                 return
             end
             g = 'createDynamic2Carney';
-        end
-        function g    = get.maxLengthEpoch(this)
-            if (~this.attenuationCorrected)
-                g = 8;
-                return
-            end 
-            g = 16;
-        end
-        function g    = get.regionTag(this)
-            if (isempty(this.region))
-                g = '';
-                return
-            end
-            if (isnumeric(this.region))                
-                g = sprintf('_%i', this.region);
-                return
-            end
-            if (ischar(this.region))
-                g = sprintf('_%s', this.region);
-                return
-            end
-            error('mlnipet:TypeError', ...
-                'SessionData.get.regionTag');
-        end
-        function g    = get.resolveTag(this)
-            if (~isempty(this.resolveTag_))
-                g = this.resolveTag_;
-                return
-            end
-            try
-                g = ['op_' this.tracerRevision('typ','fp')];
-            catch ME
-                handwarning(ME);
-                g = 'op_reference';
-            end
-        end
-        function this = set.resolveTag(this, s)
-            assert(ischar(s));
-            this.resolveTag_ = s;
-        end  
-        function g    = get.rnumber(this)
-            g = this.rnumber_;
-        end
-        function this = set.rnumber(this, r)
-            assert(isnumeric(r));
-            this.rnumber_ = r;
-        end  
-        function g    = get.supEpoch(this)
-            if (~isempty(this.supEpoch_))
-                g = this.supEpoch_;
-                return
-            end
-            g = ceil(length(this.taus) / this.maxLengthEpoch);
-        end
-        function this = set.supEpoch(this, s) 
-            assert(isnumeric(s));
-            this.supEpoch_ = s;
-        end  
+        end 
         function g    = get.t4ResolveBuilderBlurArg(this)
             g = this.tracerBlurArg;
         end   
@@ -280,35 +181,6 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
                 sprintf('%s%s%s', lower(ipr.tracer), this.epochTag, this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end        
-        function obj  = tracerNipet(this, varargin)
-            ip = inputParser;
-            ip.KeepUnmatched = true;
-            addParameter(ip, 'nativeFov', false, @islogical);
-            parse(ip, varargin{:});
-            
-            this.epoch = [];
-            this.rnumber = 1;
-            ipr = this.iprLocation(varargin{:});
-            if (ip.Results.nativeFov)
-                tr = upper(ipr.tracer);
-            else
-                tr = lower(ipr.tracer);
-            end
-            fqfn = fullfile( ...
-                this.tracerLocation('tracer', ipr.tracer, 'snumber', ipr.snumber), ...
-                'output', 'PET', ...
-                sprintf('%s.nii.gz', tr));
-            obj  = this.fqfilenameObject(fqfn, varargin{:});
-        end
-        function obj  = tracerPristine(this, varargin)
-            this.epoch = [];
-            this.rnumber = 1;
-            ipr = this.iprLocation(varargin{:});
-            fqfn = fullfile( ...
-                this.tracerLocation('tracer', ipr.tracer, 'snumber', ipr.snumber, 'typ', 'path'), ...
-                sprintf('%sr1%s', lower(ipr.tracer), this.filetypeExt));
-            obj  = this.fqfilenameObject(fqfn, varargin{:});
-        end 
         function obj  = tracerResolved(this, varargin)
             if (this.attenuationCorrected) %% FIXME, KLUDGE
                 pth = this.tracerLocation;
@@ -341,6 +213,11 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
         end
         function obj  = tracerResolvedFinalAvgt(this, varargin)
             fqfn = sprintf('%s_avgt%s', this.tracerResolvedFinal('typ', 'fqfp'), this.filetypeExt);
+            obj  = this.fqfilenameObject(fqfn, varargin{:});
+        end
+        function obj  = tracerResolvedFinalOnAtl(this, varargin)
+            fqfn = fullfile(this.sessionPath, ...
+                sprintf('%s_on_%s_%i%s', this.tracerResolvedFinal('typ', 'fp'), this.studyAtlas.fileprefix, this.atlVoxelSize, this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function obj  = tracerResolvedFinalSumt(this, varargin)
@@ -378,7 +255,18 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
         function obj  = tracerRevisionSumt(this, varargin)
             fqfn = sprintf('%s_sumt%s', this.tracerRevision('typ', 'fqfp'), this.filetypeExt);
             obj  = this.fqfilenameObject(fqfn, varargin{:});
-        end           
+        end  
+        function obj  = umapPhantom(this, varargin)
+            ip = inputParser;
+            ip.KeepUnmatched = true;
+            addParameter(ip, 'sessionFolder', 'CAL_PHANTOM2', @ischar);
+            parse(ip, varargin{:});
+
+            fqfn = fullfile( ...
+                this.subjectsDir, upper(ip.Results.sessionFolder), ...
+                sprintf('umapSynth_b40%s', this.filetypeExt));
+            obj  = this.fqfilenameObject(fqfn, varargin{:});
+        end
         function obj  = umapSynth(this, varargin)
             ip = inputParser;
             ip.KeepUnmatched = true;
@@ -407,22 +295,33 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
         end  
         function obj  = umapSynthOpTracer(this, varargin)
             obj  = this.umapSynth('tracer', this.tracer, varargin{:});
-        end 
+        end         
+        function obj  = umapTagged(this, varargin)
+            %% legacy support
+
+            ip = inputParser;
+            ip.KeepUnmatched = true;
+            addOptional(ip, 'tag', '', @ischar);
+            parse(ip, varargin{:});
+
+            if (isempty(ip.Results.tag))
+                fn = 'umapSynth';
+            else 
+                fn = sprintf('umapSynth_%s%s', ip.Results.tag, this.filetypeExt);
+            end
+            fqfn = fullfile(this.tracerRevision('typ','filepath'), fn);
+            obj  = this.fqfilenameObject(fqfn, varargin{2:end});
+        end
         
  		function this = ResolvingSessionData(varargin)
-            % @param 'resolveTag' is char
-            % @param 'rnumber'    is numeric
+            %  @param fractionalImageFrameThresh \in [0, 1].
             
- 			this = this@mlpipeline.SessionData(varargin{:});
+ 			this = this@mlnipet.SessionData(varargin{:});
             ip = inputParser;
             ip.KeepUnmatched = true;           
             addParameter(ip, 'fractionalImageFrameThresh', 0.02, @isnumeric);
-            addParameter(ip, 'resolveTag', '', @ischar);
-            addParameter(ip, 'rnumber', 1, @isnumeric);
             parse(ip, varargin{:});             
             this.fractionalImageFrameThresh_ = ip.Results.fractionalImageFrameThresh;
-            this.resolveTag_ = ip.Results.resolveTag;
-            this.rnumber_ = ip.Results.rnumber;
  		end
     end 
     
@@ -430,9 +329,6 @@ classdef (Abstract) ResolvingSessionData < mlpipeline.SessionData
     
     properties (Access = protected)
         fractionalImageFrameThresh_
-        resolveTag_
-        rnumber_
-        supEpoch_
     end
 
 	%  Created with Newcl by John J. Lee after newfcn by Frank Gonzalez-Morphy
