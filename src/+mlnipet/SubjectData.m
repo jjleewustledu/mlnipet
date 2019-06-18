@@ -19,19 +19,15 @@ classdef SubjectData < mlpipeline.SubjectData
  	%% It was developed on Matlab 9.5.0.1067069 (R2018b) Update 4 for MACI64.  Copyright 2019 John Joowon Lee.
  	
 	properties (Dependent)
-        projectData
- 		subjectsStruct 		
+ 		subjectsJson % see also aufbauSubjectsDir, subclass ctors
  	end
 
 	methods 
         
         %% GET
-
-        function g = get.projectData(this)
-            g = this.projectData_;
-        end
-        function g = get.subjectsStruct(this)
-            g = this.subjectsStruct_;
+        
+        function g = get.subjectsJson(this)
+            g = this.subjectsJson_;
         end
         
         %%
@@ -102,12 +98,6 @@ classdef SubjectData < mlpipeline.SubjectData
             split = strsplit(eid, '_');
             ses = ['ses-' split{2}];
         end
-        function fold = getProjectFolder(this, ses)
-            fold = this.projectData_.getProjectFolder(ses);
-        end
-        function pth  = getProjectPath(this, ses)
-            pth = this.projectData_.getProjectPath(ses);
-        end
         function        lns_surfer(this, prj_ses_pth, sub_ses_pth)
             %% sym-links project-session surfer objects to subject-session path
             
@@ -175,6 +165,10 @@ classdef SubjectData < mlpipeline.SubjectData
         function p    = prj_ses_pth_from(this, sub_ses_pth)
             ses = mybasename(sub_ses_pth);
             p = fullfile(this.getProjectPath(ses), ses);
+        end        
+        function sub  = subjectID_to_sub(~, sid)
+            assert(ischar(sid));
+            sub = ['sub-' sid];
         end
         function fp   = T1001_fileprefix(~, prj_ses_pth, scn, t)
             %% tracer 'fdg' -> fileprefix 'fdgr2_op_fdge1to4r1_frame4'
@@ -208,12 +202,7 @@ classdef SubjectData < mlpipeline.SubjectData
     %% PROTECTED
     
     properties (Access = protected)
-        projectData_
-        registry_
-        subjectsStruct_
-    end
-    
-    methods (Access = protected)
+        subjectsJson_
     end
 
 	%  Created with Newcl by John J. Lee after newfcn by Frank Gonzalez-Morphy
