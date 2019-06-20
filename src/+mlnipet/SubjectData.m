@@ -20,7 +20,11 @@ classdef SubjectData < mlpipeline.SubjectData
  	
 	properties (Dependent)
  		subjectsJson % see also aufbauSubjectsDir, subclass ctors
- 	end
+    end
+    
+    methods (Abstract)
+        createProjectData(session_string)
+    end
 
 	methods 
         
@@ -54,16 +58,16 @@ classdef SubjectData < mlpipeline.SubjectData
             assert(isfield(S_sub, 'experiments'))
             for e = S_sub.experiments'
                 d = this.ensuredirSes(sub_pth, e{1});
-                fcell = this.ensuredirsScans(d);
+                [fcell, prjData] = this.ensuredirsScans(d);
                 if (~isempty(fcell))
                     e1 = this.experimentID_to_ses(e{1});
                     try
                         this.lns_tracers( ...
-                            fullfile(this.projectData.getProjectPath(e1), e1, ''), ...
+                            fullfile(prjData.projectSessionPath(e1), e1, ''), ...
                             fullfile(sub_pth, e1, ''), ...
                             fcell);
                         this.lns_surfer( ...
-                            fullfile(this.projectData.getProjectPath(e1), e1, ''), ...
+                            fullfile(prjData.projectSessionPath(e1), e1, ''), ...
                             fullfile(sub_pth, e1, ''));
                     catch ME
                         handwarning(ME);
@@ -83,12 +87,15 @@ classdef SubjectData < mlpipeline.SubjectData
             d = fullfile(sub_pth, this.experimentID_to_ses(eid), '');
             ensuredir(d);            
         end
-        function fcell = ensuredirsScans(this, sub_ses_pth)
-            %  @return fcell is cell of scan-folders
+        function [fcell,prjData] = ensuredirsScans(this, sub_ses_pth)
+            %  @return fcell is cell array of scan-folders
+            %  @return prjData := this.createProjectData is mlnipet.ProjectData.
             
-            p = this.prj_ses_pth_from(sub_ses_pth);
-            prj_ses_scn = cellfun(@(x) fullfile(p, [x '*-Converted']), this.TRACERS, 'UniformOutput', false);
-            dtt = mlpet.DirToolTracer('tracer', prj_ses_scn, 'ac', true);
+            ses = mybasename(sub_ses_pth);
+            prjData = this.createProjectData('sessionStr', ses);
+            prj_ses_pth = fullfile(prjData.projectSessionPath(ses), ses);
+            prj_ses_scn_pth = cellfun(@(x) fullfile(prj_ses_pth, [x '*-Converted']), this.TRACERS, 'UniformOutput', false);
+            dtt = mlpet.DirToolTracer('tracer', prj_ses_scn_pth, 'ac', true);
             fcell = dtt.dns;
             for id = fcell
                 ensuredir(fullfile(sub_ses_pth, id{1}));
@@ -162,10 +169,6 @@ classdef SubjectData < mlpipeline.SubjectData
                 end
             end
         end
-        function p    = prj_ses_pth_from(this, sub_ses_pth)
-            ses = mybasename(sub_ses_pth);
-            p = fullfile(this.getProjectPath(ses), ses);
-        end        
         function sub  = subjectID_to_sub(~, sid)
             assert(ischar(sid));
             sub = ['sub-' sid];
