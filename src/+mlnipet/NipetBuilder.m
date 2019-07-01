@@ -106,9 +106,14 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         %%
         
         function this = cleanSingleFrameLocation(this, loc)
-            if (~isdir(loc))
+            if ~isfolder(loc)
                 return
             end            
+            dt = mlsystem.DirTool(fullfile(loc, '*'));
+            if isempty(dt.fqfns)
+                rmdir(fullfile(loc))
+                return
+            end
             pwd0 = pushd(loc);        
             names = this.standardizeFileNames;
             name = this.mergeFrames(names);
