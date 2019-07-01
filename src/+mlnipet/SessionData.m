@@ -450,8 +450,9 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             this.frame_   = ip.Results.frame;
         end
         function f    = jsonFilename(this)
-            glob_expr = fullfile(this.tracerOutputPetLocation, [upper(this.tracer) '_DT*.json']);
+            glob_expr = '*_DT*.json';
             try
+                glob_expr = fullfile(this.tracerOutputPetLocation, [upper(this.tracer) '_DT*.json']);
                 dt = mlsystem.DirTool(glob_expr);
                 assert(1 == dt.length, [evalc('disp(dt)') '\n' evalc('disp(dt.fqfns)')]);
                 f = dt.fqfns{1};
