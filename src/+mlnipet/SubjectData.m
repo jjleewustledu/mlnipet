@@ -63,11 +63,11 @@ classdef SubjectData < mlpipeline.SubjectData
                     e1 = this.experimentID_to_ses(e{1});
                     try
                         this.lns_tracers( ...
-                            fullfile(prjData.projectSessionPath(e1), e1, ''), ...
+                            fullfile(prjData.projectSessionPath(e1), ''), ...
                             fullfile(sub_pth, e1, ''), ...
                             fcell);
                         this.lns_surfer( ...
-                            fullfile(prjData.projectSessionPath(e1), e1, ''), ...
+                            fullfile(prjData.projectSessionPath(e1), ''), ...
                             fullfile(sub_pth, e1, ''));
                     catch ME
                         handwarning(ME);
@@ -93,7 +93,7 @@ classdef SubjectData < mlpipeline.SubjectData
             
             ses = mybasename(sub_ses_pth);
             prjData = this.createProjectData('sessionStr', ses);
-            prj_ses_pth = fullfile(prjData.projectSessionPath(ses), ses);
+            prj_ses_pth = prjData.projectSessionPath(ses);
             prj_ses_scn_pth = cellfun(@(x) fullfile(prj_ses_pth, [x '*-Converted']), this.TRACERS, 'UniformOutput', false);
             dtt = mlpet.DirToolTracer('tracer', prj_ses_scn_pth, 'ac', true);
             fcell = dtt.dns;
@@ -109,12 +109,14 @@ classdef SubjectData < mlpipeline.SubjectData
             %% sym-links project-session surfer objects to subject-session path
             
             % convert /projectsPath/PROJ_00123/ses-E123456/mri/wmparc.mgz
-            system(sprintf('mri_convert %s.mgz %s.nii', ...
-                fullfile(prj_ses_pth, 'mri', 'wmparc'), ...
-                fullfile(prj_ses_pth, 'wmparc')));
-            system(sprintf('nifti_4dfp -4 %s.nii %s.4dfp.hdr', ...
-                fullfile(prj_ses_pth, 'wmparc'), ...
-                fullfile(prj_ses_pth, 'wmparc')));
+            if ~isfile(fullfile(prj_ses_pth, 'wmparc.4dfp.hdr'))
+                system(sprintf('mri_convert %s.mgz %s.nii', ...
+                    fullfile(prj_ses_pth, 'mri', 'wmparc'), ...
+                    fullfile(prj_ses_pth, 'wmparc')));
+                system(sprintf('nifti_4dfp -4 %s.nii %s.4dfp.hdr', ...
+                    fullfile(prj_ses_pth, 'wmparc'), ...
+                    fullfile(prj_ses_pth, 'wmparc')));
+            end
             
             % ln -s
             for s = {'aparcA2009sAseg' 'aparcAseg' 'brainmask' 'wmparc' 'T1001'}
@@ -184,13 +186,19 @@ classdef SubjectData < mlpipeline.SubjectData
             fp = myfileprefix(dt.fns{1});
         end
         function fp   = tracer_fileprefix(~, prj_ses_pth, scn, t)
-            %% tracer 'fdg' -> fileprefix 'fdgr2_op_fdge1to4r1_frame4'
+            %% tracer 'fdg' -> fileprefix 'fdgr2_op_fdge1to4r1_frame4';
+            %  tracer 'fdg' -> fileprefix 'fdgr1' otherwise.
             %  @param prj_ses_pth is f.q. path
             %  @param scn is folder in prj_ses_pth
             %  @param t is one of lower(this.TRACERS)
             
-            dt = mlsystem.DirTool(fullfile(prj_ses_pth, scn, [t 'r2_op_' t 'e1to*r1_frame*.4dfp.hdr']));
-            assert(dt.length > 0, evalc('disp(dt)'))
+            import mlsystem.DirTool
+            
+            dt = DirTool(fullfile(prj_ses_pth, scn, [t 'r2_op_' t 'e1to*r1_frame*.4dfp.hdr']));
+            if 0 == dt.length
+                dt = DirTool(fullfile(prj_ses_pth, scn, [t 'r1.4dfp.hdr']));
+                warning('mlnipet:RuntimeWarning', 'SubjectData.tracer_fileprefix is returning with motion corrections')
+            end
             fp = myfileprefix(dt.fns{1});
         end
 		  
