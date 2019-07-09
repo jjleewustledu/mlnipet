@@ -271,7 +271,7 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             ip = inputParser;
             ip.KeepUnmatched = true;
             addParameter(ip, 'tracer', this.tracer, @ischar);
-            addParameter(ip, 'blurTag', mlnipet.ResourcesRegistyr.instance().suffixPetPointSpread, @ischar);
+            addParameter(ip, 'blurTag', mlnipet.ResourcesRegistry.instance().suffixPetPointSpread, @ischar);
             parse(ip, varargin{:});
             tr = ip.Results.tracer;
             
