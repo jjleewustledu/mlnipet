@@ -246,7 +246,8 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             import mlfourd.*;
             assert(isdir(this.outputDir));
             ensuredir(this.sessionData.tracerRevision('typ', 'path'));
-            if (~lexist_4dfp(this.sessionData.tracerRevision('typ', 'fqfp')))
+            if (~lexist_4dfp(this.sessionData.tracerRevision('typ', 'fqfp')) || ...
+                    this.sessionData.ignoreFinishMark)
                 ic2 = ImagingContext2(this.sessionData.tracerNipet('typ', '.nii.gz'));
                 ic2.addLog( ...
                     sprintf('mlraichle.TracerDirector2.prepareFourdfpTracerImages.sessionData.tracerListmodeDcm->%s', ...
