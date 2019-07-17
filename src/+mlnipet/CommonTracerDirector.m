@@ -303,7 +303,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
     methods (Access = protected)
         function deleteEpochs__(this)
             for e = 1:this.sessionData.supEpoch
-                deleteExisting(fullfile(this.sessionData.scanPath, sprintf('E%i', e), ''));
+                mlbash(sprintf('rm -rf %s', fullfile(this.sessionData.scanPath, sprintf('E%i', e), '')));
             end
         end
         function deleteExisting__(~)
