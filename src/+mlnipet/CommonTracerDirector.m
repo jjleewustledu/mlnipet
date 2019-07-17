@@ -270,9 +270,9 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             if (this.sessionData.attenuationCorrected)
                 try
                     this.builder_ = this.builder_.partitionMonolith;
-                    this.builder_ = this.builder_.motionCorrectFrames;
+                    this.builder_ = this.builder_.motionCorrectFrames; % returns composite builder
                 catch ME
-                    handwarning(ME);
+                    handexcept(ME, 'mlnipet:RuntimeError', 'CommonTracerDirector.tryMotionCorrectFrames');
                     this.deleteEpochs__;
                     this.builder_ = this.builder_.partitionMonolith;
                     this.builder_ = this.builder_.motionCorrectFrames;
@@ -280,9 +280,9 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             else
                 try
                     this.builder_ = this.builder_.partitionMonolith;
-                    [this.builder_,epochs,reconstituted] = this.builder_.motionCorrectFrames;
+                    [this.builder_,epochs,reconstituted] = this.builder_.motionCorrectFrames; % returns composite builder
                 catch ME
-                    handwarning(ME);
+                    handexcept(ME, 'mlnipet:RuntimeError', 'CommonTracerDirector.tryMotionCorrectFrames');
                     this.deleteEpochs__;
                     this.builder_ = this.builder_.partitionMonolith;
                     [this.builder_,epochs,reconstituted] = this.builder_.motionCorrectFrames;
