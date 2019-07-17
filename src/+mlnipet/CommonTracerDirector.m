@@ -212,7 +212,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             this.sessionData.frame = nan;
             this.builder_.sessionData.frame = nan;
             this.builder_ = this.tryMotionCorrectFrames(this.builder_);  
-            this.builder_ = this.builder_.reconstituteFramesAC2;
+            this.builder_ = this.builder_.reconstituteFramesAC3;
             this.builder_ = this.builder_.avgtProduct;
             this.builder_.logger.save; 
             if (mlpipeline.ResourcesRegistry.instance().debug)
