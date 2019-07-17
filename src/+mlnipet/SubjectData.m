@@ -18,6 +18,10 @@ classdef SubjectData < mlpipeline.SubjectData
  	%  last modified $LastChangedDate$ and placed into repository /Users/jjlee/MATLAB-Drive/mlnipet/src/+mlnipet.
  	%% It was developed on Matlab 9.5.0.1067069 (R2018b) Update 4 for MACI64.  Copyright 2019 John Joowon Lee.
  	
+    properties (Constant)
+        SURFER_OBJECTS = {'aparcA2009sAseg' 'aparcAseg' 'brain' 'brainmask' 'wmparc' 'T1001'}
+    end
+    
 	properties (Dependent)
  		subjectsJson % see also aufbauSubjectsDir, subclass ctors
     end
@@ -109,17 +113,19 @@ classdef SubjectData < mlpipeline.SubjectData
             %% sym-links project-session surfer objects to subject-session path
             
             % convert /projectsPath/PROJ_00123/ses-E123456/mri/wmparc.mgz
-            if ~isfile(fullfile(prj_ses_pth, 'wmparc.4dfp.hdr'))
-                system(sprintf('mri_convert %s.mgz %s.nii', ...
-                    fullfile(prj_ses_pth, 'mri', 'wmparc'), ...
-                    fullfile(prj_ses_pth, 'wmparc')));
-                system(sprintf('nifti_4dfp -4 %s.nii %s.4dfp.hdr', ...
-                    fullfile(prj_ses_pth, 'wmparc'), ...
-                    fullfile(prj_ses_pth, 'wmparc')));
+            for s = {'wmparc' 'brain'}
+                if ~isfile(fullfile(prj_ses_pth, [s{1} '.4dfp.hdr']))
+                    system(sprintf('mri_convert %s.mgz %s.nii', ...
+                        fullfile(prj_ses_pth, 'mri', s{1}), ...
+                        fullfile(prj_ses_pth, s{1})));
+                    system(sprintf('nifti_4dfp -4 %s.nii %s.4dfp.hdr', ...
+                        fullfile(prj_ses_pth, s{1}), ...
+                        fullfile(prj_ses_pth, s{1})));
+                end
             end
             
             % ln -s
-            for s = {'aparcA2009sAseg' 'aparcAseg' 'brainmask' 'wmparc' 'T1001'}
+            for s = this.SURFER_OBJECTS
                 for x = [this.EXTS '.nii']
                     if ~isfile([fullfile(sub_ses_pth, s{1}) x{1}])
                         assert(isfile([fullfile(prj_ses_pth, s{1}) x{1}]))
@@ -144,28 +150,27 @@ classdef SubjectData < mlpipeline.SubjectData
                     if strncmpi(t{1}, scn{1}, length(t{1}))                        
                         try
                             tracerfp = this.tracer_fileprefix(prj_ses_pth, scn{1}, t{1});
-                            if ~lexist_4dfp(fullfile(sub_ses_pth, scn{1}, t{1}))
-                                lns_4dfp( ...
-                                    fullfile(prj_ses_pth, scn{1}, tracerfp), ...
-                                    fullfile(sub_ses_pth, scn{1}, t{1}))
-                            end
-                            if ~lexist_4dfp(fullfile(sub_ses_pth, scn{1}, [t{1} '_avgt']))
-                                lns_4dfp( ...
-                                    fullfile(prj_ses_pth, scn{1}, [tracerfp '_avgt']), ...
-                                    fullfile(sub_ses_pth, scn{1}, [t{1} '_avgt']))
-                            end
+                            deleteExisting(fullfile(sub_ses_pth, scn{1}, [t{1} '.4dfp.*']))
+                            lns_4dfp( ...
+                                fullfile(prj_ses_pth, scn{1}, tracerfp), ...
+                                fullfile(sub_ses_pth, scn{1}, t{1}))
+                            deleteExisting(fullfile(sub_ses_pth, scn{1}, [t{1} '_avgt.4dfp.*']))
+                            lns_4dfp( ...
+                                fullfile(prj_ses_pth, scn{1}, [tracerfp '_avgt']), ...
+                                fullfile(sub_ses_pth, scn{1}, [t{1} '_avgt']))
                         catch ME
                             handwarning(ME)
-                        end                        
-                        try
-                            t1fp = this.T1001_fileprefix(prj_ses_pth, scn{1}, t{1});
-                            if ~lexist_4dfp(fullfile(sub_ses_pth, scn{1}, 'T1001'))
+                        end  
+                        if strcmpi(t{1}, 'fdg')
+                            try
+                                t1fp = this.T1001_fileprefix(prj_ses_pth, scn{1}, t{1});
+                                deleteExisting(fullfile(sub_ses_pth, scn{1}, 'T1001.4dfp.*'))
                                 lns_4dfp( ...
                                     fullfile(prj_ses_pth, scn{1}, t1fp), ...
                                     fullfile(sub_ses_pth, scn{1}, 'T1001'))
+                            catch ME
+                                handwarning(ME)
                             end
-                        catch ME
-                            handwarning(ME)
                         end
                     end
                 end
@@ -194,11 +199,12 @@ classdef SubjectData < mlpipeline.SubjectData
             
             import mlsystem.DirTool
             
-            dt = DirTool(fullfile(prj_ses_pth, scn, [t 'r2_op_' t 'e1to*r1_frame*.4dfp.hdr']));
+            dt = DirTool(fullfile(prj_ses_pth, scn, [t 'r2_op_' t 'r1_frame*.4dfp.hdr']));
             if 0 == dt.length
                 dt = DirTool(fullfile(prj_ses_pth, scn, [t 'r1.4dfp.hdr']));
                 warning('mlnipet:RuntimeWarning', 'SubjectData.tracer_fileprefix is returning with motion corrections')
             end
+            assert(~isempty(dt.fns), 'mlnipet:RuntimeError', 'SubjectData.tracer_fileprefix')
             fp = myfileprefix(dt.fns{1});
         end
 		  
