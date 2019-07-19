@@ -14,6 +14,17 @@ classdef (Abstract) StudyRegistry < handle & mlpet.StudyRegistry
         fslroiArgs        
         projectsDir
         subjectsDir
+    end    
+    
+    methods (Static)        
+        function ses  = experimentID_to_ses(eid)
+            split = strsplit(eid, '_');
+            ses = ['ses-' split{2}];
+        end
+        function sub  = subjectID_to_sub(sid)
+            split = strsplit(sid, '_');
+            sub = ['sub-' split{2}];
+        end
     end
     
     methods

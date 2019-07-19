@@ -46,35 +46,43 @@ classdef SubjectData < mlpipeline.SubjectData
             S = this.subjectsJson_;
             for sub = fields(S)'
                 d = this.ensuredirSub(S.(sub{1}).sid);
-                this.aufbauSubjectPath(d, S.(sub{1}));
+                this.aufbauSessionPath(d, S.(sub{1}));
             end
         end
-        function        aufbauSubjectPath(this, sub_pth, S_sub)
-            %% e. g., /subjectsDir/sub-S40037/{ses-E182819, ses-E182853, ...}/tracer.4dfp.*, with sym-linked tracer.4dfp.*
+        function        aufbauSessionPath(this, sub_pth, S_sub, varargin)
+            %% refreshes subjects/ses-S12345/ses-E12345/TRA_DT123456.000000-Converted-AC with short-name sym-links to 
+            %            CCIR_00123/ses-S12345/ses-E12345/TRA_DT123456.000000-Converted-AC. 
+            %  e. g., /subjectsDir/sub-S40037/{ses-E182819, ses-E182853, ...}/tracer.4dfp.*, with sym-linked tracer.4dfp.*
+            
+            ip = inputParser;
+            addParameter(ip, 'experimentPattern', '_E', @ischar)
+            parse(ip, varargin{:})
             
             if isfield(S_sub, 'aliases')
                 for asub = fields(S_sub.aliases)'
-                    this.aufbauSubjectPath(sub_pth, S_sub.aliases.(asub{1}));
+                    this.aufbauSessionPath(sub_pth, S_sub.aliases.(asub{1}), varargin{:});
                 end
             end
             
             % base case
             assert(isfield(S_sub, 'experiments'))
             for e = S_sub.experiments'
-                d = this.ensuredirSes(sub_pth, e{1});
-                [fcell, prjData] = this.ensuredirsScans(d);
-                if (~isempty(fcell))
-                    e1 = this.experimentID_to_ses(e{1});
-                    try
-                        this.lns_tracers( ...
-                            fullfile(prjData.projectSessionPath(e1), ''), ...
-                            fullfile(sub_pth, e1, ''), ...
-                            fcell);
-                        this.lns_surfer( ...
-                            fullfile(prjData.projectSessionPath(e1), ''), ...
-                            fullfile(sub_pth, e1, ''));
-                    catch ME
-                        handwarning(ME);
+                if lstrfind(e{1}, ip.Results.experimentPattern)
+                    d = this.ensuredirSes(sub_pth, e{1});
+                    [fcell, prjData] = this.ensuredirsScans(d);
+                    if (~isempty(fcell))
+                        e1 = this.studyRegistry_.experimentID_to_ses(e{1});
+                        try
+                            this.lns_tracers( ...
+                                fullfile(prjData.projectSessionPath(e1), ''), ...
+                                fullfile(sub_pth, e1, ''), ...
+                                fcell);
+%                            this.lns_surfer( ...
+%                                fullfile(prjData.projectSessionPath(e1), ''), ...
+%                                fullfile(sub_pth, e1, ''));
+                        catch ME
+                            handwarning(ME);
+                        end
                     end
                 end
             end
@@ -82,13 +90,13 @@ classdef SubjectData < mlpipeline.SubjectData
         function d    = ensuredirSub(this, sid)
             %  @return d is f.q. path to subject
 
-            d = fullfile(this.subjectsDir, this.subjectID_to_sub(sid), '');
+            d = fullfile(this.subjectsDir, this.studyRegistry_.subjectID_to_sub(sid), '');
             ensuredir(d);
         end
         function d    = ensuredirSes(this, sub_pth, eid)
             %  @return d is f.q. path to session
             
-            d = fullfile(sub_pth, this.experimentID_to_ses(eid), '');
+            d = fullfile(sub_pth, this.studyRegistry_.experimentID_to_ses(eid), '');
             ensuredir(d);            
         end
         function [fcell,prjData] = ensuredirsScans(this, sub_ses_pth)
@@ -104,10 +112,6 @@ classdef SubjectData < mlpipeline.SubjectData
             for id = fcell
                 ensuredir(fullfile(sub_ses_pth, id{1}));
             end
-        end
-        function ses  = experimentID_to_ses(~, eid)
-            split = strsplit(eid, '_');
-            ses = ['ses-' split{2}];
         end
         function        lns_surfer(this, prj_ses_pth, sub_ses_pth)
             %% sym-links project-session surfer objects to subject-session path
@@ -151,34 +155,30 @@ classdef SubjectData < mlpipeline.SubjectData
                         try
                             tracerfp = this.tracer_fileprefix(prj_ses_pth, scn{1}, t{1});
                             deleteExisting(fullfile(sub_ses_pth, scn{1}, [t{1} '.4dfp.*']))
+                            deleteDeadLink(fullfile(sub_ses_pth, scn{1}, [t{1} '.4dfp{.hdr,.img}']))
                             lns_4dfp( ...
                                 fullfile(prj_ses_pth, scn{1}, tracerfp), ...
                                 fullfile(sub_ses_pth, scn{1}, t{1}))
                             deleteExisting(fullfile(sub_ses_pth, scn{1}, [t{1} '_avgt.4dfp.*']))
+                            deleteDeadLink(fullfile(sub_ses_pth, scn{1}, [t{1} '_avgt.4dfp{.hdr,.img}']))
                             lns_4dfp( ...
                                 fullfile(prj_ses_pth, scn{1}, [tracerfp '_avgt']), ...
                                 fullfile(sub_ses_pth, scn{1}, [t{1} '_avgt']))
                         catch ME
                             handwarning(ME)
                         end  
-                        if strcmpi(t{1}, 'fdg')
-                            try
-                                t1fp = this.T1001_fileprefix(prj_ses_pth, scn{1}, t{1});
-                                deleteExisting(fullfile(sub_ses_pth, scn{1}, 'T1001.4dfp.*'))
-                                lns_4dfp( ...
-                                    fullfile(prj_ses_pth, scn{1}, t1fp), ...
-                                    fullfile(sub_ses_pth, scn{1}, 'T1001'))
-                            catch ME
-                                handwarning(ME)
-                            end
+                        try
+                            deleteExisting(fullfile(sub_ses_pth, scn{1}, 'T1001.4dfp.*'))
+                            deleteDeadLink(fullfile(sub_ses_pth, scn{1}, 'T1001.4dfp{.hdr,.img}'))
+                            lns_4dfp( ...
+                                fullfile(prj_ses_pth, scn{1}, 'T1001'), ...
+                                fullfile(sub_ses_pth, scn{1}, 'T1001'))
+                        catch ME
+                            handwarning(ME)
                         end
                     end
                 end
             end
-        end
-        function sub  = subjectID_to_sub(~, sid)
-            assert(ischar(sid));
-            sub = ['sub-' sid];
         end
         function fp   = T1001_fileprefix(~, prj_ses_pth, scn, t)
             %% tracer 'fdg' -> fileprefix 'fdgr2_op_fdge1to4r1_frame4'
@@ -202,7 +202,7 @@ classdef SubjectData < mlpipeline.SubjectData
             dt = DirTool(fullfile(prj_ses_pth, scn, [t 'r2_op_' t 'r1_frame*.4dfp.hdr']));
             if 0 == dt.length
                 dt = DirTool(fullfile(prj_ses_pth, scn, [t 'r1.4dfp.hdr']));
-                warning('mlnipet:RuntimeWarning', 'SubjectData.tracer_fileprefix is returning with motion corrections')
+                warning('mlnipet:RuntimeWarning', 'SubjectData.tracer_fileprefix is returning without motion corrections')
             end
             assert(~isempty(dt.fns), 'mlnipet:RuntimeError', 'SubjectData.tracer_fileprefix')
             fp = myfileprefix(dt.fns{1});
