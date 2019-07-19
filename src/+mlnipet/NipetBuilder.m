@@ -237,6 +237,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 return
             end
             
+            mlbash('ls -alt > mlnipet.NipetBuilder.standardizeFilenames.log')            
             for f = 1:length(unsorted)
                 r = regexp(unsorted.fns{f}, this.lmNamesRE, 'names');
                 movefile(unsorted.fns{f}, this.standardFramedName(str2double(r.frame)));
