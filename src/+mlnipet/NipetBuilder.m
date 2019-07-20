@@ -53,7 +53,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 this = this.packageProduct(this.standardMergedName('fullFov', false));
                 return
             end
-            this = this.cleanSingleFrameLocation(ip.Results.nipetd.tracerOutputSingleFrameLocation);
+            this = this.packageSingleFrameLocation(ip.Results.nipetd.tracerOutputSingleFrameLocation);
         end
         function this = CreatePrototypeAC(varargin)
             
@@ -67,8 +67,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             nipetd_.tracerOutputPetLocation = ...
                 '/scratch/jjlee/Singularity/CCIR_00559/ses-E262767/FDG_DT20181005142531.000000-Converted-AC/output/PET';
             nipetd_.lmTag = ...
-                'createDynamic2Carney';
-            
+                'createDynamic2Carney';            
             ip = inputParser;
             addOptional(ip, 'nipetd', nipetd_, @(x) isa(x, 'mlpipeline.ISessionData') || isstruct(x));
             parse(ip, varargin{:});
@@ -78,7 +77,21 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 this = this.packageProduct(this.standardMergedName('fullFov', false));
                 return
             end
-            this = this.cleanSingleFrameLocation(ip.Results.nipetd.tracerOutputSingleFrameLocation);
+            singleFrameLoc = ip.Results.nipetd.tracerOutputSingleFrameLocation;
+            PETLoc = fileparts(singleFrameLoc);
+            assert(~isempty(glob( ...
+                fullfile(PETLoc, [upper(this.sessionData.tracer) '_DT*.json']))))
+            assert(isfile( ...
+                fullfile(PETLoc, 'reconstruction_Reconstruction_finished.touch')))
+            assert(isfile( ...
+                fullfile(PETLoc, 'reconstruction_Reconstruction_started.touch')))
+            assert(isfolder(singleFrameLoc))
+            dt = mlsystem.DirTool(fullfile(singleFrameLoc, '*'));
+            if isempty(dt.fqfns)
+                rmdir(fullfile(loc))
+                return
+            end
+            this = this.packageSingleFrameLocation(singleFrameLoc);
         end
     end
 
@@ -105,15 +118,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         
         %%
         
-        function this = cleanSingleFrameLocation(this, loc)
-            if ~isfolder(loc)
-                return
-            end            
-            dt = mlsystem.DirTool(fullfile(loc, '*'));
-            if isempty(dt.fqfns)
-                rmdir(fullfile(loc))
-                return
-            end
+        function this = packageSingleFrameLocation(this, loc)
             pwd0 = pushd(loc);        
             names = this.standardizeFileNames;
             name = this.mergeFrames(names);
