@@ -1,5 +1,11 @@
 classdef CommonTracerDirector < mlpipeline.AbstractDirector
 	%% COMMONTRACERDIRECTOR  
+    %  Salient calling order:  
+    %      constructResolved
+    %      instanceConstructResolvedNAC
+    %          mlnipet.NipetBuilder.CreatePrototypeNAC
+    %              packageSingleFrameLocation - gathers NIPET frames, renames them, merges frames, saves TRACER.nii.gz, crops to tracer.nii.gz
+    %          packageTracerResolvedR1 - reads tracer.nii.gz, does flip(1) to correct NIPET orientation discrepency, saves tracerr1.nii.gz
 
 	%  $Revision$
  	%  was created 21-May-2019 21:58:04 by jjlee,
@@ -207,7 +213,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
         end
         function this = instanceConstructResolvedAC(this)
             mlnipet.NipetBuilder.CreatePrototypeAC(this.sessionData);
-            this          = this.prepareFourdfpTracerImages;   
+            this          = this.packageTracerResolvedR1;   
             this.builder_ = this.builder_.reconstituteFramesAC;
             this.sessionData.frame = nan;
             this.builder_.sessionData.frame = nan;
@@ -224,7 +230,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
         end
         function this = instanceConstructResolvedNAC(this)
             mlnipet.NipetBuilder.CreatePrototypeNAC(this.sessionData);
-            this          = this.prepareFourdfpTracerImages;
+            this          = this.packageTracerResolvedR1;
             this.builder_ = this.builder_.prepareMprToAtlasT4;
             [this.builder_,epochs,reconstituted] = this.tryMotionCorrectFrames(this.builder_);          
             reconstituted = reconstituted.motionCorrectCTAndUmap;             
@@ -240,7 +246,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
                 this.builder_.markAsFinished;
             end
         end
-        function this = prepareFourdfpTracerImages(this)
+        function this = packageTracerResolvedR1(this)
             %% copies reduced-FOV NIfTI tracer images to this.sessionData.tracerLocation in 4dfp format.
             
             import mlfourd.*;
@@ -248,12 +254,12 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             ensuredir(this.sessionData.tracerRevision('typ', 'path'));
             if (~lexist_4dfp(this.sessionData.tracerRevision('typ', 'fqfp')) || ...
                     this.sessionData.ignoreFinishMark)
-                ic2 = ImagingContext2(this.sessionData.tracerNipet('typ', '.nii.gz'));
+                ic2 = ImagingContext2(this.sessionData.tracerNipet('typ', '.nii.gz')); % e.g., fdg.nii.gz
                 ic2.addLog( ...
-                    sprintf('mlraichle.TracerDirector2.prepareFourdfpTracerImages.sessionData.tracerListmodeDcm->%s', ...
+                    sprintf('mlraichle.TracerDirector2.packageTracerResolvedR1.sessionData.tracerListmodeDcm->%s', ...
                     this.sessionData.tracerListmodeDcm));
                 ic2 = this.flipKLUDGE____(ic2); % KLUDGE:  bug at interface with NIPET
-                ic2.saveas(this.sessionData.tracerRevision('typ', '.4dfp.hdr'));
+                ic2.saveas(this.sessionData.tracerRevision('typ', '.4dfp.hdr')); % e.g., fdgr1.nii.gz
             end
             this.builder_ = this.builder_.packageProduct( ...
                 ImagingContext2(this.sessionData.tracerRevision('typ', '.4dfp.hdr')));
