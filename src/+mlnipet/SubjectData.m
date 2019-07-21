@@ -77,9 +77,9 @@ classdef SubjectData < mlpipeline.SubjectData
                                 fullfile(prjData.projectSessionPath(e1), ''), ...
                                 fullfile(sub_pth, e1, ''), ...
                                 fcell);
-%                            this.lns_surfer( ...
-%                                fullfile(prjData.projectSessionPath(e1), ''), ...
-%                                fullfile(sub_pth, e1, ''));
+                            this.lns_surfer( ...
+                                fullfile(prjData.projectSessionPath(e1), ''), ...
+                                fullfile(sub_pth, e1, ''));
                         catch ME
                             handwarning(ME);
                         end
@@ -113,45 +113,29 @@ classdef SubjectData < mlpipeline.SubjectData
                 ensuredir(fullfile(sub_ses_pth, id{1}));
             end
         end
-        function        lns_surfer(this, prj_ses_pth, sub_ses_pth)
-            %% sym-links project-session surfer objects to subject-session path
+        function        lns_surfer(~, prj_ses_pth, sub_ses_pth)
+            %% sym-links project-session-scan surfer objects to subject-session-tracer path
+            %  @param prj_ses_pth is f.q. path
+            %  @param sub_ses_pth is f.q. path
             
-            % convert /projectsPath/PROJ_00123/ses-E123456/mri/wmparc.mgz
-            for s = {'wmparc' 'brain'}
-                if ~isfile(fullfile(prj_ses_pth, [s{1} '.4dfp.hdr']))
-                    system(sprintf('mri_convert %s.mgz %s.nii', ...
-                        fullfile(prj_ses_pth, 'mri', s{1}), ...
-                        fullfile(prj_ses_pth, s{1})));
-                    system(sprintf('nifti_4dfp -4 %s.nii %s.4dfp.hdr', ...
-                        fullfile(prj_ses_pth, s{1}), ...
-                        fullfile(prj_ses_pth, s{1})));
-                end
-            end
-            
-            % ln -s
-            for s = this.SURFER_OBJECTS
-                for x = [this.EXTS '.nii']
-                    if ~isfile([fullfile(sub_ses_pth, s{1}) x{1}])
-                        assert(isfile([fullfile(prj_ses_pth, s{1}) x{1}]))
-                        system(sprintf('ln -s %s%s %s%s', ...
-                            fullfile(prj_ses_pth, s{1}), x{1}, ...
-                            fullfile(sub_ses_pth, s{1}), x{1}))
-                    end
-                end
-            end
+            system(sprintf('ln -s %s %s', ...
+                fullfile(prj_ses_pth, 'mri', ''), fullfile(sub_ses_pth)))
+            lns_4dfp(fullfile(prj_ses_pth, 'T1001'), fullfile(sub_ses_pth, 'T1001'))
         end
         function        lns_tracers(this, prj_ses_pth, sub_ses_pth, scncell)
-            %% sym-links tracers in project-session path to subject-session path
+            %% sym-links tracers in project-session path, first FDG scan, to subject-session path
             %  @param prj_ses_pth is f.q. path
             %  @param sub_ses_pth is f.q. path
             %  @param fcell is cell of scan-folders for prj_ses_pth and sub_ses_pth
-            
+                                        
             if ischar(scncell)
                 scncell = {scncell};
             end
-            for scn = scncell
+            for scn = asrow(scncell)
                 for t = lower(this.TRACERS)
-                    if strncmpi(t{1}, scn{1}, length(t{1}))                        
+                    if strncmpi(t{1}, scn{1}, length(t{1}))    
+                        
+                        % tracer images
                         try
                             tracerfp = this.tracer_fileprefix(prj_ses_pth, scn{1}, t{1});
                             deleteExisting(fullfile(sub_ses_pth, scn{1}, [t{1} '.4dfp.*']))
@@ -167,6 +151,8 @@ classdef SubjectData < mlpipeline.SubjectData
                         catch ME
                             handwarning(ME)
                         end  
+                        
+                        % T1001 images
                         try
                             deleteExisting(fullfile(sub_ses_pth, scn{1}, 'T1001.4dfp.*'))
                             deleteDeadLink(fullfile(sub_ses_pth, scn{1}, 'T1001.4dfp{.hdr,.img}'))
