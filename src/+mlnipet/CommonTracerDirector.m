@@ -62,6 +62,49 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
                 ic2.ensureSingle;
             end
         end
+        function tmp  = migrationTeardown(fps, logs, dest_fqfp0, dest)
+            tmp = protectFiles(fps, fps{1}, logs);
+            deleteFiles(dest_fqfp0, fps{1}, fps, dest);   
+            unprotectFiles(tmp);
+                        
+            function tmp = protectFiles(fps, fps1, logs)
+                
+                % in tempFilepath
+                tmp = tempFilepath('protectFiles');
+                ensuredir(tmp);                
+                for f = 1:length(fps)
+                    moveExisting([fps{f} '.4dfp.*'], tmp);
+                    moveExisting([fps{f} 'r1_b43.4dfp.*'], tmp);
+                end
+                moveExisting( 'T1001.4dfp.*', tmp);
+                moveExisting(['T1001r1_op_' fps1 '.4dfp.*'], tmp);
+                moveExisting(sprintf('T1001_to_op_%s_t4', fps1), tmp)
+                moveExisting( 'T1001_to_TRIO_Y_NDC_t4', tmp)
+
+                % in Log
+                moveExisting('*.mat0', logs);
+                moveExisting('*.sub',  logs);
+                moveExisting('*.log',  logs);  
+            end
+            function deleteFiles(dest_fqfp0, fps1, fps, dest)
+                assert(lstrfind(dest_fqfp0{end}, '_sumt'));
+                deleteExisting([dest_fqfp0{end} 'r1.4dfp.*']);
+                deleteExisting([dest_fqfp0{end} 'r1_op_' fps1 '.4dfp.*']);
+                deleteExisting([dest_fqfp0{end} 'r1_to_op_' fps1 '_t4']);
+                deleteExisting([dest_fqfp0{end} 'r1_to_T1001r1_t4']);
+                for f = 1:length(fps)
+                    deleteExisting(fullfile(dest, ['T1001r1_to_' fps{f} 'r1_t4']));
+                end
+                deleteExisting('T1001r1.4dfp.*');
+                deleteExisting('T1001r1_b43.4dfp.*');
+                deleteExisting('*_mskt.4dfp.*');
+                deleteExisting('*_g11.4dfp.*');       
+            end
+            function unprotectFiles(tmp)
+                movefile(fullfile(tmp, '*'), pwd);
+                rmdir(tmp);
+            end
+        end
         function lst  = prepareFreesurferData(varargin)
             %% PREPAREFREESURFERDATA prepares session-specific copies of data enumerated by this.freesurferData.
             %  @param named sessionData is an mlpipeline.ISessionData.
@@ -181,7 +224,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             inst.projectsDir = fullfile(getenv('PROJECTS_DIR'));
             inst.subjectsDir = fullfile(getenv('SUBJECTS_DIR'));
         end
-        function fastFilesystemTeardownProject(this)
+        function           fastFilesystemTeardownProject(this)
             try
                 fastProjPath = fullfile(this.FAST_FILESYSTEM, ...
                                         getenv('SUBJECTS_DIR'), ...
@@ -306,6 +349,22 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
     end
 
     %% PROTECTED
+    
+    methods (Static, Access = protected)
+        function ipr = adjustIprConstructResolvedStudy(ipr)
+            ss = strsplit(ipr.foldersExpr, filesep);
+            assert(3 == length(ss));
+            ipr.projectsExpr = ss{1};
+            ipr.sessionsExpr = ss{2};
+            ipr.tracersExpr = ss{3};
+            results = {'projectsExpr' 'sessionsExpr' 'tracersExpr'};
+            for r = 1:length(results)
+                if (~lstrfind(ipr.(results{r}), '*'))
+                    ipr.(results{r}) = [ipr.(results{r}) '*'];
+                end
+            end
+        end  
+    end
     
     methods (Access = protected)
         function deleteEpochs__(this)
