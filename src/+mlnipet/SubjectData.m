@@ -66,7 +66,10 @@ classdef SubjectData < mlpipeline.SubjectData
             
             % base case
             assert(isfield(S_sub, 'experiments'))
-            for e = S_sub.experiments'
+            if ischar(S_sub.experiments)
+                S_sub.experiments = {S_sub.experiments};
+            end
+            for e = asrow(S_sub.experiments)
                 if lstrfind(e{1}, ip.Results.experimentPattern)
                     d = this.ensuredirSes(sub_pth, e{1});
                     [fcell, prjData] = this.ensuredirsScans(d);
