@@ -70,6 +70,12 @@ classdef SubjectData < mlpipeline.SubjectData
                 S_sub.experiments = {S_sub.experiments};
             end
             for e = asrow(S_sub.experiments)
+                
+                % look to studyRegistry for experiments to skip
+                if lstrfind(e{1}, this.studyRegistry_.ignoredExperiments)
+                    continue
+                end
+                
                 if lstrfind(e{1}, ip.Results.experimentPattern)
                     d = this.ensuredirSes(sub_pth, e{1});
                     [fcell, prjData] = this.ensuredirsScans(d);
