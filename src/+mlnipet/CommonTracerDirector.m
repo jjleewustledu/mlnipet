@@ -14,6 +14,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
  	
     properties (Constant)
         FAST_FILESYSTEM = '/fast_filesystem_disabled'
+        SURFER_OBJECTS = { 'aparc+aseg' 'aparc.a2009s+aseg' 'brain' 'brainmask' 'T1' 'wmparc' }
     end
     
 	properties (Dependent)
@@ -34,25 +35,6 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             inst.keepForensics = false;
             this = mlnipet.CommonTracerDirector(mlpet.TracerResolveBuilder(varargin{:}));   
             this = this.instanceCleanResolved;
-        end
-        function this = constructResolved(varargin)
-            %  @param varargin for mlpet.TracerResolveBuilder.
-            %  @return ignores the first frame of OC and OO which are NAC since they have breathing tube visible.  
-            %  @return umap files generated per motionUncorrectedUmap ready
-            %  for use by TriggeringTracers.js; 
-            %  sequentially run FDG NAC, 15O NAC, then all tracers AC.
-            %  @return this.sessionData.attenuationCorrection == false.
-                      
-            this = mlnipet.CommonTracerDirector(mlpet.TracerResolveBuilder(varargin{:}));
-            this.fastFilesystemSetup;
-            if (~this.sessionData.attenuationCorrected)
-                this = this.instanceConstructResolvedNAC;                
-                this.fastFilesystemTeardownWithAC(true); % intermediate artifacts
-            else
-                this = this.instanceConstructResolvedAC;
-            end
-            this.fastFilesystemTeardown;
-            this.fastFilesystemTeardownProject;
         end
         function ic2  = flipKLUDGE____(ic2)
             if (mlnipet.ResourcesRegistry.instance().FLIP1)
@@ -119,7 +101,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             
             pwd0    = pushd(sess.sessionPath);
             fv      = mlfourdfp.FourdfpVisitor;
-            fsd     = { 'aparc+aseg' 'aparc.a2009s+aseg' 'brainmask' 'T1' 'wmparc' };  
+            fsd     = mlnipet.CommonTracerDirector.SURFER_OBJECTS;  
             safefsd = fsd; safefsd{4} = 'T1001';
             safefsd = fv.ensureSafeFileprefix(safefsd);
             lst     = cell(1, length(safefsd));
