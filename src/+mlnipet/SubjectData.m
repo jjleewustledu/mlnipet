@@ -29,6 +29,44 @@ classdef SubjectData < mlpipeline.SubjectData
     methods (Abstract)
         createProjectData(session_string)
     end
+    
+    methods (Static)
+        function sesf = findExperiments(subS, subf)
+            %% subS is struct from subjectsJson
+            %  subf is folder on filesystem
+
+            import mlnipet.SubjectData
+            sesf = {};                
+
+            % base case
+            if isfield(subS, 'experiments')
+                for e = asrow(subS.experiments)
+                    ss = split(e{1}, '_');
+                    if SubjectData.hasScanFolders(subf, ['ses-' ss{2}])
+                        sesf = [sesf ['ses-' ss{2}]]; %#ok<AGROW>
+                    end
+                end
+            end
+
+            % recursion for aliases
+            if isfield(subS, 'aliases')
+                subjects = fields(subS.aliases);
+                for a = asrow(subjects)
+                    sesf = [sesf SubjectData.findExperiments(subS.aliases.(a{1}), subf)]; %#ok<AGROW>
+                end
+            end
+        end
+        function tf = hasScanFolders(subf, sesf)
+            %% @param subf
+            %  @param sesf
+            
+            assert(isfolder( ...
+                fullfile(getenv('SUBJECTS_DIR'), subf, sesf, '')))
+            globbed = glob( ...
+                fullfile(getenv('SUBJECTS_DIR'), subf, sesf, '*_DT*.000000-Converted-AC', ''));
+            tf = ~isempty(globbed);
+        end
+    end
 
 	methods 
         
