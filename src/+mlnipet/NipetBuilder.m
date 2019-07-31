@@ -85,13 +85,15 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 fullfile(PETLoc, 'reconstruction_Reconstruction_finished.touch')))
             assert(isfile( ...
                 fullfile(PETLoc, 'reconstruction_Reconstruction_started.touch')))
-            assert(isfolder(singleFrameLoc))
-            dt = mlsystem.DirTool(fullfile(singleFrameLoc, '*'));
-            if isempty(dt.fqfns)
-                rmdir(fullfile(loc))
-                return
+            %assert(isfolder(singleFrameLoc))
+            %dt = mlsystem.DirTool(fullfile(singleFrameLoc, '*'));
+            %if isempty(dt.fqfns)
+            %    rmdir(fullfile(singleFrameLoc))
+            %    return
+            %end
+            if isfolder(singleFrameLoc)
+                this = this.packageSingleFrameLocation(singleFrameLoc);
             end
-            this = this.packageSingleFrameLocation(singleFrameLoc);
         end
     end
 

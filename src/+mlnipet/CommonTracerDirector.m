@@ -261,9 +261,11 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             reconstituted = reconstituted.motionCorrectCTAndUmap;             
             this.builder_ = reconstituted.motionUncorrectUmap(epochs);     
             this.builder_ = this.builder_.aufbauUmaps;     
-            this.builder_.logger.save;       
-            p = this.flipKLUDGE____(this.builder_.product); % KLUDGE:  bug at interface with NIPET
-            p.save;
+            this.builder_.logger.save;
+            if lstrfind(this.sessionData.reconstructionMethod, 'NiftyPET')
+                p = this.flipKLUDGE____(this.builder_.product); % KLUDGE:  bug at interface with NIPET
+                p.save;
+            end
             if (mlpipeline.ResourcesRegistry.instance().debug)
                 save('mlnipet_CommonTracerDirector_instanceConstructResolvedNAC.mat');
             else
@@ -277,14 +279,16 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             import mlfourd.*;
             assert(isdir(this.outputDir));
             ensuredir(this.sessionData.tracerRevision('typ', 'path'));
-            if (~lexist_4dfp(this.sessionData.tracerRevision('typ', 'fqfp')) || ...
-                    this.sessionData.ignoreFinishMark)
-                ic2 = ImagingContext2(this.sessionData.tracerNipet('typ', '.nii.gz')); % e.g., fdg.nii.gz
-                ic2.addLog( ...
-                    sprintf('mlraichle.TracerDirector2.packageTracerResolvedR1.sessionData.tracerListmodeDcm->%s', ...
-                    this.sessionData.tracerListmodeDcm));
-                ic2 = this.flipKLUDGE____(ic2); % KLUDGE:  bug at interface with NIPET
-                ic2.saveas(this.sessionData.tracerRevision('typ', '.4dfp.hdr')); % e.g., fdgr1.nii.gz
+            if lstrfind(this.sessionData.reconstructionMethod, 'NiftyPET')
+                if (~lexist_4dfp(this.sessionData.tracerRevision('typ', 'fqfp')) || ...
+                        this.sessionData.ignoreFinishMark)
+                    ic2 = ImagingContext2(this.sessionData.tracerNipet('typ', '.nii.gz')); % e.g., fdg.nii.gz
+                    ic2.addLog( ...
+                        sprintf('mlraichle.TracerDirector2.packageTracerResolvedR1.sessionData.tracerListmodeDcm->%s', ...
+                        this.sessionData.tracerListmodeDcm));
+                    ic2 = this.flipKLUDGE____(ic2); % KLUDGE:  bug at interface with NIPET
+                    ic2.saveas(this.sessionData.tracerRevision('typ', '.4dfp.hdr')); % e.g., fdgr1.nii.gz
+                end
             end
             this.builder_ = this.builder_.packageProduct( ...
                 ImagingContext2(this.sessionData.tracerRevision('typ', '.4dfp.hdr')));
