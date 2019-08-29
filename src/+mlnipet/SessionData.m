@@ -13,6 +13,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         builder
         indicesLogical     
         isotope
+        itr
         studyCensus
         tauIndices % use to exclude late frames from builders of AC; e.g., taus := taus(tauIndices)
         tauMultiplier
@@ -85,6 +86,15 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             end            
             error('mlpipeline:indeterminatePropertyValue', ...
                 'SessionData.isotope could not recognize tracer %s', this.sessionData.tracer);
+        end
+        function g    = get.itr(this)
+            if strcmpi(this.tracer, 'OC') || ...
+               strcmpi(this.tracer, 'CO') || ...
+               strcmpi(this.tracer, 'OO')
+                g = 2;
+                return
+            end
+            g = 4;
         end
         function g    = get.studyCensus(this)
             g = this.getStudyCensus;
