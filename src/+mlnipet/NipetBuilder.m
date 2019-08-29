@@ -102,11 +102,11 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         %% GET
         
         function g = get.lmNamesAst(this)
-            g = sprintf('%s_itr-%i_t-*-*sec_%s_time*.nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
+            g = sprintf('%s_itr-*_t-*-*sec_%s_time*.nii.gz', this.NIPET_PREFIX, this.nipetData_.lmTag);
         end
         function g = get.lmNamesRE(this)
             %g = sprintf('%s_\\S+_itr%i_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
-            g = sprintf('%s_itr-%i_t-\\d+-\\d+sec_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
+            g = sprintf('%s_itr-\\d+_t-\\d+-\\d+sec_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.nipetData_.lmTag);
         end
         function g = get.itr(this)
             g = this.nipetData_.itr;
@@ -247,7 +247,9 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             mlbash('ls -alt > mlnipet.NipetBuilder.standardizeFilenames.log')            
             for f = 1:length(unsorted)
                 r = regexp(unsorted.fns{f}, this.lmNamesRE, 'names');
-                movefile(unsorted.fns{f}, this.standardFramedName(str2double(r.frame)));
+                if ~isempty(r)
+                    movefile(unsorted.fns{f}, this.standardFramedName(str2double(r.frame)));
+                end
             end
             nn = this.standardFramedNames(0:length(unsorted.fns)-1);
         end        
