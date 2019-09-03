@@ -102,7 +102,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             pwd0    = pushd(sess.sessionPath);
             fv      = mlfourdfp.FourdfpVisitor;
             fsd     = mlnipet.CommonTracerDirector.SURFER_OBJECTS;  
-            safefsd = fsd; safefsd{4} = 'T1001';
+            safefsd = fsd; safefsd{5} = 'T1001';
             safefsd = fv.ensureSafeFileprefix(safefsd);
             lst     = cell(1, length(safefsd));
             sess    = ip.Results.sessionData;
