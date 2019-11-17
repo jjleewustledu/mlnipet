@@ -26,7 +26,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             
             this = mlnipet.NipetBuilder(ip.Results.nipetd); 
             deleteExisting(this.standardMergedName('fullFov', false));
-            if (isdir(ip.Results.nipetd.tracerOutputSingleFrameLocation))
+            if (isfolder(ip.Results.nipetd.tracerOutputSingleFrameLocation))
                 rmdir(ip.Results.nipetd.tracerOutputSingleFrameLocation, 's');
             end
         end
@@ -34,15 +34,11 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             
             % prototypical values, inconsequential if passing ISessionData
  			nipetd_.itr = 4;
-            nipetd_.tracer = 'FDG';
-            nipetd_.tracerConvertedLocation = ...
-                '/scratch/jjlee/Singularity/CCIR_00559/ses-E262767/FDG_DT20181005142531.000000-Converted-NAC';
-            nipetd_.tracerOutputSingleFrameLocation = ...
-                '/scratch/jjlee/Singularity/CCIR_00559/ses-E262767/FDG_DT20181005142531.000000-Converted-NAC/output/PET/single-frame';
-            nipetd_.tracerOutputPetLocation = ...
-                '/scratch/jjlee/Singularity/CCIR_00559/ses-E262767/FDG_DT20181005142531.000000-Converted-NAC/output/PET';
-            nipetd_.lmTag = ...
-                'createDynamicNAC';
+            nipetd_.tracer = 'none';
+            nipetd_.tracerConvertedLocation = tempdir;
+            nipetd_.tracerOutputSingleFrameLocation = tempdir;
+            nipetd_.tracerOutputPetLocation = tempdir;
+            nipetd_.lmTag = 'createDynamicNAC';
             
             ip = inputParser;
             addOptional(ip, 'nipetd', nipetd_, @(x) isa(x, 'mlpipeline.ISessionData') || isstruct(x));
@@ -59,20 +55,16 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             
             % prototypical values, inconsequential if passing ISessionData
  			nipetd_.itr = 4;
-            nipetd_.tracer = 'FDG';
-            nipetd_.tracerConvertedLocation = ...
-                '/scratch/jjlee/Singularity/CCIR_00559/ses-E262767/FDG_DT20181005142531.000000-Converted-AC';
-            nipetd_.tracerOutputSingleFrameLocation = ...
-                '/scratch/jjlee/Singularity/CCIR_00559/ses-E262767/FDG_DT20181005142531.000000-Converted-AC/output/PET/single-frame';
-            nipetd_.tracerOutputPetLocation = ...
-                '/scratch/jjlee/Singularity/CCIR_00559/ses-E262767/FDG_DT20181005142531.000000-Converted-AC/output/PET';
-            nipetd_.lmTag = ...
-                'createDynamic2Carney';            
+            nipetd_.tracer = 'none';
+            nipetd_.tracerConvertedLocation = tempdir;
+            nipetd_.tracerOutputSingleFrameLocation = tempdir;
+            nipetd_.tracerOutputPetLocation = tempdir;
+            nipetd_.lmTag = 'createDynamic2Carney';            
             ip = inputParser;
             addOptional(ip, 'nipetd', nipetd_, @(x) isa(x, 'mlpipeline.ISessionData') || isstruct(x));
             parse(ip, varargin{:});
             
-            this = mlnipet.NipetBuilder(ip.Results.nipetd);  
+            this = mlnipet.NipetBuilder(ip.Results.nipetd);
             if (lexist(this.standardMergedName('fullFov', false), 'file'))
                 this = this.packageProduct(this.standardMergedName('fullFov', false));
                 return

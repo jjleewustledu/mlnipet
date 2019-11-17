@@ -146,7 +146,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
         
         function pwdLast = fastFilesystemSetup(this)
             slowd = this.sessionData.scanPath;
-            if (~isdir(this.FAST_FILESYSTEM))
+            if (~isfolder(this.FAST_FILESYSTEM))
                 pwdLast = pushd(slowd);
                 return
             end
@@ -186,7 +186,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             assert(islogical(ac));
             this.sessionData.attenuationCorrected = ac;
             slowd = fullfile(this.sessionData.projectPath, this.sessionData.sessionFolder, this.sessionData.scanFolder, '');
-            if (~isdir(this.FAST_FILESYSTEM))
+            if (~isfolder(this.FAST_FILESYSTEM))
                 pwdLast = popd(slowd);
                 return
             end
@@ -277,7 +277,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             %% copies reduced-FOV NIfTI tracer images to this.sessionData.tracerLocation in 4dfp format.
             
             import mlfourd.*;
-            assert(isdir(this.outputDir));
+            assert(isfolder(this.outputDir));
             ensuredir(this.sessionData.tracerRevision('typ', 'path'));
             if lstrfind(this.sessionData.reconstructionMethod, 'NiftyPET')
                 if (~lexist_4dfp(this.sessionData.tracerRevision('typ', 'fqfp')) || ...

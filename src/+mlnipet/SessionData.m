@@ -166,7 +166,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         end
         function obj  = T1001(this, varargin)
             fqfn = fullfile(this.sessionPath, ['T1001' this.filetypeExt]);
-            if (~lexist(fqfn, 'file') && isdir(this.freesurferLocation))
+            if (~lexist(fqfn, 'file') && isfolder(this.freesurferLocation))
                 mic = T1001@mlpipeline.SessionData(this, 'typ', 'mlfourd.ImagingContext2');
                 mic.nifti;
                 mic.saveas(fqfn);
