@@ -316,8 +316,13 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function obj  = tracerListmodeDcm(this, varargin)
-            dt   = mlsystem.DirTool(fullfile(this.scanPath, 'LM', '*.dcm'));
-            assert(1 == length(dt.fqfns));
+            dt   = mlsystem.DirTool(fullfile(this.scanPath, 'LM', '*.dcm'));            
+            if (isempty(dt.fqfns))
+                error('mlnipet:FileNotFoundError', 'SessionData.tracerListmodeDcm found no listmode DICOM')
+            end
+            if (length(dt.fqfns) > 1)
+                error('mlnipet:RuntimeError', 'SessionData.tracerListmodeDcm found multiple listmode DICOMs')
+            end
             fqfn = dt.fqfns{1};            
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
