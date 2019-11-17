@@ -94,11 +94,13 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         %% GET
         
         function g = get.lmNamesAst(this)
-            g = sprintf('%s_itr-*_t-*-*sec_%s_time*.nii.gz', this.NIPET_PREFIX, this.nipetData_.lmTag);
+            g = { sprintf('%s_itr-*_t-*-*sec_%s_time*.nii.gz', this.NIPET_PREFIX, this.nipetData_.lmTag) ...
+                  sprintf('%s_t-*-*sec_itr-*_%s_time*.nii.gz', this.NIPET_PREFIX, this.nipetData_.lmTag) };
         end
         function g = get.lmNamesRE(this)
             %g = sprintf('%s_\\S+_itr%i_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
-            g = sprintf('%s_itr-\\d+_t-\\d+-\\d+sec_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.nipetData_.lmTag);
+            g = { sprintf('%s_itr-\\d+_t-\\d+-\\d+sec_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.nipetData_.lmTag) ...
+                  sprintf('%s_t-\\d+-\\d+sec_itr-\\d+_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.nipetData_.lmTag)  };
         end
         function g = get.itr(this)
             g = this.nipetData_.itr;
@@ -230,20 +232,32 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             %  @return nn is cell array of short, mnemonic names in frame-numerical order starting from frame0 |
             %  @return previously renamed files if there are no matches with lmNamesAst.
             
-            unsorted = mlsystem.DirTool(this.lmNamesAst); % filesystem-name sorted, not frame-numerically sorted
-            if (isempty(unsorted.fns)) % files were previously renamed
+            unsorted = {};
+            idx = 1;
+            while isempty(unsorted) && idx <= length(this.lmNamesAst)
+                unsorted = glob(this.lmNamesAst{idx}); % filesystem-name sorted, not frame-numerically sorted
+                idx = idx + 1;
+            end
+            if isempty(unsorted) % files were previously renamed
                 nn = this.standardFramedNames('*'); 
+                assert(~isempty(nn))
                 return
             end
             
             mlbash('ls -alt > mlnipet.NipetBuilder.standardizeFilenames.log')            
             for f = 1:length(unsorted)
-                r = regexp(unsorted.fns{f}, this.lmNamesRE, 'names');
+                r = struct([]);
+                idx = 1;
+                while isempty(r) && idx <= length(this.lmNamesRE{idx})
+                    r = regexp(unsorted{f}, this.lmNamesRE{idx}, 'names');
+                    idx = idx + 1;
+                end
                 if ~isempty(r)
-                    movefile(unsorted.fns{f}, this.standardFramedName(str2double(r.frame)));
+                    movefile(unsorted{f}, this.standardFramedName(str2double(r.frame)));
                 end
             end
-            nn = this.standardFramedNames(0:length(unsorted.fns)-1);
+            nn = this.standardFramedNames('*');
+            assert(~isempty(nn))
         end        
 		  
  		function this = NipetBuilder(varargin)
@@ -255,6 +269,11 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             parse(ip, varargin{:});
             
             this.nipetData_ = ip.Results.nipetData;
+            assert(ismethod(this.nipetData_, 'tracerOutputLocation'))
+            output = this.nipetData_.tracerOutputLocation();
+            if ~isfolder(output)
+                throw(MException('mlnipet:RuntimeError', 'NipetBuilder.ctor could not find %s', output))
+            end
  		end
     end 
     
