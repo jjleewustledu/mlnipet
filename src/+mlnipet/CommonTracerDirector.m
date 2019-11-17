@@ -25,6 +25,76 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
     end
     
     methods (Static)
+        function ic2  = addMirrorUmap(ic2, sessd)
+            assert(isa(ic2, 'mlfourd.ImagingContext2'))
+            assert(isa(sessd, 'mlnipet.SessionData'))
+            
+            if strcmpi(sessd.tracer, 'OO')
+                mirrorUmap = mlnipet.CommonTracerDirector.alignMirrorUmapToOO(sessd);
+                ic2 = ic2 + mirrorUmap;
+            end            
+        end
+        function umap = alignMirrorUmapToOO(sessd)
+            pwd0 = pushd(sessd.tracerOutputPetLocation());
+            
+            [OO,weights] = theOO(sessd);            
+            [mirrorOnOO,umap] = prepareMirror('', OO, weights);
+            if overlap(OO, mirrorOnOO) < 0.5
+                [mirrorOnOO,umap] = prepareMirror('_facing_console', OO, weights);
+                assert(overlap(OO, mirrorOnOO) >= 0.5)
+            end
+            
+            deleteExisting('mirror_*4dfp*')
+            deleteExisting('*_b86*4dfp*')
+            popd(pwd0)
+            
+            %% INTERNAL
+            
+            function ol = overlap(b, a)
+                num = b .* a;
+                a2  = a .* a;
+                b2  = b .* b;
+                ol  = num.dipsum/(sqrt(a2.dipsum) * sqrt(b2.dipsum));
+            end
+            function [mirrorOnOO,umap] = prepareMirror(tag, OO, weights)
+                import mlfourd.ImagingContext2
+                fv = mlfourdfp.FourdfpVisitor;
+                mirror = theMirror(tag);
+                fv.align_translationally( ...
+                    'dest', OO.fileprefix, ...
+                    'source', mirror.fileprefix, ...
+                    'destMask', weights.fqfileprefix)  
+                mirrorOnOO = ImagingContext2([mirror.fileprefix '_on_' OO.fileprefix '.4dfp.hdr']);
+                umapSourceFp = fullfile(getenv('HARDWAREUMAPS'), ['mirror_umap_344x344x127' tag]);
+                umapFp = ['mirror_umap_344x344x127_on_' OO.fileprefix];
+                fv.t4img_4dfp( ...
+                    [mirror.fileprefix '_to_' OO.fileprefix '_t4'], ...
+                    umapSourceFp, ...
+                    'out', umapFp, ...
+                    'options', ['-O' OO.fileprefix])
+                umap = ImagingContext2([umapFp '.4dfp.hdr']);
+                umap.nifti
+            end
+            function [ic2,w] = theOO(sessd)                
+                import mlfourd.ImagingContext2
+                w   = ImagingContext2(fullfile(getenv('HARDWAREUMAPS'), 'mirror_weights_344x344x127.4dfp.hdr'));
+                ic2 = ImagingContext2(fullfile(sessd.tracerOutputPetLocation, 'OO.nii.gz'));
+                ic2 = ic2.timeAveraged;
+                ic2 = ic2.blurred(8.6);
+                ic2 = ic2.thresh(300);
+                ic2.filepath = pwd;
+                ic2.filesuffix = '.4dfp.hdr';
+                ic2 = ic2 .* w;
+                ic2.save
+            end
+            function ic2 = theMirror(tag)
+                ic2 = mlfourd.ImagingContext2(fullfile(getenv('HARDWAREUMAPS'), ['mirror_OO_344x344x127' tag '.4dfp.hdr']));
+                ic2 = ic2.blurred(8.6);
+                ic2 = ic2.thresh(300);
+                ic2.filepath = pwd;
+                ic2.save
+            end
+        end
         function this = cleanResolved(varargin)
             %  @param varargin for mlpet.TracerResolveBuilder.
             %  @return ignores the first frame of OC and OO which are NAC since they have breathing tube visible.  
@@ -258,12 +328,13 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             this          = this.packageTracerResolvedR1;
             this.builder_ = this.builder_.prepareMprToAtlasT4;
             [this.builder_,epochs,reconstituted] = this.tryMotionCorrectFrames(this.builder_);          
-            reconstituted = reconstituted.motionCorrectCTAndUmap;             
+            reconstituted = reconstituted.motionCorrectCTAndUmap;
             this.builder_ = reconstituted.motionUncorrectUmap(epochs);     
             this.builder_ = this.builder_.aufbauUmaps;     
             this.builder_.logger.save;
             if lstrfind(this.sessionData.reconstructionMethod, 'NiftyPET')
                 p = this.flipKLUDGE____(this.builder_.product); % KLUDGE:  bug at interface with NIPET
+                p = this.addMirrorUmap(p, this.sessionData);
                 p.save;
             end
             if (mlpipeline.ResourcesRegistry.instance().debug)
