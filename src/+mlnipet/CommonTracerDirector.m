@@ -324,8 +324,27 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             end
         end
         function this = instanceConstructResolvedNAC(this)
-            mlnipet.NipetBuilder.CreatePrototypeNAC(this.sessionData);
-            this          = this.packageTracerResolvedR1;
+            mlnipet.NipetBuilder.CreatePrototypeNAC(this.sessionData);            
+            try
+                this = this.packageTracerResolvedR1;
+            catch ME
+                if (strcmp(ME.identifier, 'mlnipet:FileNotFoundError'))
+                    sessd = this.sessionData;
+                    sessd.attenuationCorrected = true;  
+                    if isfolder(fullfile(sessd.scanPath, 'umap', ''))
+                        movefile(fullfile(sessd.scanPath, 'umap', ''), this.sessionData.scanPath)                                                
+                    end                  
+                    if isfolder(fullfile(sessd.scanPath, 'LM', '')) && ...
+                       isfolder(fullfile(sessd.scanPath, 'norm', ''))
+                       
+                        movefile(fullfile(sessd.scanPath, 'LM', ''), this.sessionData.scanPath)
+                        movefile(fullfile(sessd.scanPath, 'norm', ''), this.sessionData.scanPath)
+                        this = this.packageTracerResolvedR1;
+                    end
+                else
+                    rethrow(ME)
+                end
+            end
             this.builder_ = this.builder_.prepareMprToAtlasT4;
             [this.builder_,epochs,reconstituted] = this.tryMotionCorrectFrames(this.builder_);          
             reconstituted = reconstituted.motionCorrectCTAndUmap;
