@@ -115,8 +115,9 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         %%
         
         function this = packageSingleFrameLocation(this, loc)
-            pwd0 = pushd(loc);        
-            names = this.standardizeFileNames;
+            pwd0 = pushd(loc);
+            this.standardizeObsoleteFileNames()
+            names = this.standardizeFileNames();
             name = this.mergeFrames(names);
             name = this.crop(name);
             name = this.fillmissing(name);
@@ -235,7 +236,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             unsorted = {};
             idx = 1;
             while isempty(unsorted) && idx <= length(this.lmNamesAst)
-                unsorted = glob(this.lmNamesAst{idx}); % filesystem-name sorted, not frame-numerically sorted
+                unsorted = glob(this.lmNamesAst{idx}); % filesystem-name sorted, not frame-number sorted
                 idx = idx + 1;
             end
             if isempty(unsorted) % files were previously renamed
@@ -258,7 +259,25 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             end
             nn = this.standardFramedNames('*');
             assert(~isempty(nn))
-        end        
+        end 
+        function        standardizeObsoleteFileNames(this)
+            %% rename NiftyPET frames with obsolete lmNamesAst{1} to specification of lmNamesAst{2}.
+            
+            obsolete = glob(this.lmNamesAst{1}); 
+            if isempty(obsolete) 
+                return
+            end          
+            lmNamesRE1 = [ ...
+                this.NIPET_PREFIX '_itr-(?<iterations>\d+)_t-(?<t0>\d+)-(?<t1>\d+)sec_' ...
+                this.nipetData_.lmTag '_time(?<frame>\d+).nii.gz'];
+            for ui = 1:length(obsolete)
+                r = regexp(obsolete{ui}, lmNamesRE1, 'names');
+                newfn = sprintf( ...
+                    '%s_t-%s-%ssec_itr-%s_%s_time%s.nii.gz', ...
+                    this.NIPET_PREFIX, r.t0, r.t1, r.iterations, this.nipetData_.lmTag, r.frame);
+                movefile(obsolete{ui}, newfn, 'f');
+            end
+        end
 		  
  		function this = NipetBuilder(varargin)
  			%% NIPETBUILDER
