@@ -383,64 +383,29 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             this.builder_ = this.builder_.packageProduct( ...
                 ImagingContext2(this.sessionData.tracerRevision('typ', '.4dfp.hdr')));
         end
-        function populateTracerUmapFolder_(this)
-            
-            
-            pwd0 = pushd(this.sessionData.sessionLocation());        
-            tracer = this.sessionData.tracerLocation('typ', 'folder');
-            tracerDT = regexp(tracer, '\w+_DT(?<adatetime>\d{14})(|.\d+)-Converted-NAC', 'names');
-            tracerDT = datetime(tracerDT.adatetime, 'InputFormat', 'yyyyMMddHHmmss');
-            umaps = onlydirs(glob(fullfile('umaps', '*_DT*', ''))); % column vec
-            for ui = 1:length(umaps)
-                umapDT = regexp(mybasename(umaps{ui}), '\S+_DT(?<adatetime>\d{14})(|.\d+)', 'names');
-                umapDT = datetime(umapDT.adatetime, 'InputFormat', 'yyyyMMddHHmmss');
-            end
-            
-            ulast = umaps{1};            
-            for u = umaps
-                umapDT = regexp(mybasename(u{1}), '\S+_DT(?<adatetime>\d{14})(|.\d+)', 'names');
-                umapDT = datetime(umapDT.adatetime, 'InputFormat', 'yyyyMMddHHmmss');
-                if umapDT >= tracerDT || strcmp(u{1}, umaps{end})
-                    system(sprintf('cp -rf %s umap', ulast))
-                    if isfolder(fullfile(tracer, 'umap'))
-                        system(sprintf('rm -rf %s', fullfile(tracer, 'umap')))
-                    end
-                    system(sprintf('mv umap %s', tracer))
-                    break
-                end
-                ulast = u{1};
-            end
-            popd(pwd0)
-        end
         function populateTracerUmapFolder(this)
             %% NIPET requires Siemens UMAP DICOMs in fullfile(this.sessionData.tracerLocation(), 'umap', '').
-            %  Populate these locations with time-stamped folders from fullfile(this.sessionData.sessionLocation(), 'umaps')
+            %  Populate these locations with time-stamped folders from fullfile(this.sessionData.sessionLocation(), 'umaps')            
             
-            pwd0 = pushd(this.sessionData.sessionLocation());
-            umaps = onlydirs(globT(fullfile('umaps', '*_DT*', '')));            
-            tracer = this.sessionData.tracerLocation('typ', 'folder');
-            rt = regexp(tracer, '\w+_DT(?<timestamp>\d{14})(|.\d+)-Converted-NAC', 'names');
-            rt = datetime(rt.timestamp, 'InputFormat', 'yyyyMMddHHmmss');
-            ulast = umaps{1};
-            for u = umaps
-                ru = regexp(mybasename(u{1}), '\S+_DT(?<timestamp>\d{14})(|.\d+)', 'names');
-                ru = datetime(ru.timestamp, 'InputFormat', 'yyyyMMddHHmmss');
-                if ru >= rt || strcmp(u{1}, umaps{end})
-                    system(sprintf('cp -rf %s umap', ulast))
-                    if isfolder(fullfile(tracer, 'umap'))
-                        system(sprintf('rm -rf %s', fullfile(tracer, 'umap')))
-                    end
-                    system(sprintf('mv umap %s', tracer))
-                    break
-                end
-                ulast = u{1};
+            pwd0 = pushd(this.sessionData.sessionLocation());        
+            tracerFold = this.sessionData.tracerLocation('typ', 'folder');
+            tracerDT = regexp(tracerFold, '\w+_DT(?<adatetime>\d{14})(|.\d+)-Converted-NAC', 'names');
+            tracerDT = datetime(tracerDT.adatetime, 'InputFormat', 'yyyyMMddHHmmss');
+            
+            umapFolds = globFoldersT(fullfile('umaps', '*_DT*', '')); % cell row-array without filesep
+            for ui = 1:length(umapFolds)
+                umapDT_ = regexp(mybasename(umapFolds{ui}), '\S+_DT(?<adatetime>\d{14})(|.\d+)', 'names');
+                assert(~isempty(umapDT_), ...
+                    'mlnipet:RuntimeError', 'CommonTracerDirector.populateTracerUmapFolder.umapDT_ was empty')
+                umapDT(ui) = datetime(umapDT_.adatetime, 'InputFormat', 'yyyyMMddHHmmss'); %#ok<AGROW>
             end
+            tbl = table(umapDT', umapFolds', 'VariableNames', {'umapDT' 'umapFolds'});
+            deltaDT = abs(tbl.umapDT - tracerDT);
+            foundUmapFold = umapFolds(deltaDT == min(deltaDT));
+            copyfile(foundUmapFold{1}, fullfile(tracerFold, 'umap'), 'f')
+            assert(~isempty(glob(fullfile(tracerFold, 'umap', '*'))), ...
+                'mlnipet:RuntimeError', 'CommonTracerDirector.populateTracerUmapFolder found empty umap folder')
             popd(pwd0)
-            
-            function c = onlydirs(c)                
-                cisdir = cell2mat(cellfun(@(x) isfolder(x), c, 'UniformOutput', false));
-                c = c(cisdir);
-            end
         end
         function [bldr,epochs,reconstituted] = tryMotionCorrectFrames(this, bldr)
             %% TRYMOTIONCORRECTFRAMES will partition monolithic image into epochs, 
