@@ -29,10 +29,16 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             assert(isa(ic2, 'mlfourd.ImagingContext2'))
             assert(isa(sessd, 'mlnipet.SessionData'))
             
-            if strcmpi(sessd.tracer, 'OO')
-                mirrorUmap = mlnipet.CommonTracerDirector.alignMirrorUmapToOO(sessd);
-                ic2 = ic2 + mirrorUmap;
-            end            
+            try
+                if strcmpi(sessd.tracer, 'OO')
+                    mirrorUmap = mlnipet.CommonTracerDirector.alignMirrorUmapToOO(sessd);
+                    mirrorUmap.ensureSingle;
+                    ic2 = ic2 + mirrorUmap;
+                end
+            catch ME
+                handwarning(ME, 'mlnipet:RuntimeWarning', ...
+                    'CommonTracerDirector.addMirrorUmap could not generate registered mirror umap')
+            end
         end
         function umap = alignMirrorUmapToOO(sessd)
             pwd0 = pushd(sessd.tracerOutputPetLocation());
@@ -352,16 +358,12 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             this.builder_ = this.builder_.aufbauUmaps;     
             this.builder_.logger.save;
             if lstrfind(this.sessionData.reconstructionMethod, 'NiftyPET')
-                p = this.flipKLUDGE____(this.builder_.product); % KLUDGE:  bug at interface with NIPET
-                p = this.addMirrorUmap(p, this.sessionData);
+                p = this.addMirrorUmap(this.builder_.product, this.sessionData);
+                p = this.flipKLUDGE____(p); % KLUDGE:  bug at interface with NIPET
                 p.save;
             end
-            if (mlpipeline.ResourcesRegistry.instance().debug)
-                save('mlnipet_CommonTracerDirector_instanceConstructResolvedNAC.mat');
-            else
-                this.builder_.deleteWorkFiles;
-                this.builder_.markAsFinished;
-            end
+            this.builder_.deleteWorkFiles;
+            this.builder_.markAsFinished;
         end
         function this = packageTracerResolvedR1(this)
             %% copies reduced-FOV NIfTI tracer images to this.sessionData.tracerLocation in 4dfp format.
