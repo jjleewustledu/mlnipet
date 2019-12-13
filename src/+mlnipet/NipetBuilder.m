@@ -100,7 +100,8 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         function g = get.lmNamesRE(this)
             %g = sprintf('%s_\\S+_itr%i_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.itr, this.nipetData_.lmTag);
             g = { sprintf('%s_itr-\\d+_t-\\d+-\\d+sec_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.nipetData_.lmTag) ...
-                  sprintf('%s_t-\\d+-\\d+sec_itr-\\d+_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.nipetData_.lmTag)  };
+                  sprintf('%s_t-\\d+-\\d+sec_itr-\\d+_%s_time(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.nipetData_.lmTag) ...                  
+                  sprintf('%s_t-\\d+-\\d+sec_itr-\\d+_%s_time-(?<frame>\\d+).nii.gz', this.NIPET_PREFIX, this.nipetData_.lmTag) };
         end
         function g = get.itr(this)
             g = this.nipetData_.itr;
@@ -115,8 +116,9 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
         %%
         
         function this = packageSingleFrameLocation(this, loc)
-            pwd0 = pushd(loc);        
-            names = this.standardizeFileNames;
+            pwd0 = pushd(loc);
+            this.standardizeObsoleteFileNames()
+            names = this.standardizeFileNames();
             name = this.mergeFrames(names);
             name = this.crop(name);
             name = this.fillmissing(name);
@@ -230,13 +232,13 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             %  Frame numbers are read from filenames by regexp with lmNamesAst.
             %  Frame corruption is mitigated by enumerating consecutive frames starting from frame0.
             %  @return nn is cell array of short, mnemonic names in frame-numerical order starting from frame0 |
-            %  @return previously renamed files if there are no matches with lmNamesAst.
+            %  @return nn contains previously renamed files if there are no matches with lmNamesAst.
             
             unsorted = {};
-            idx = 1;
-            while isempty(unsorted) && idx <= length(this.lmNamesAst)
-                unsorted = glob(this.lmNamesAst{idx}); % filesystem-name sorted, not frame-numerically sorted
-                idx = idx + 1;
+            idxAst = 1;
+            while isempty(unsorted) && idxAst <= length(this.lmNamesAst)
+                unsorted = glob(this.lmNamesAst{idxAst}); % filesystem-name sorted, not frame-number sorted
+                idxAst = idxAst + 1;
             end
             if isempty(unsorted) % files were previously renamed
                 nn = this.standardFramedNames('*'); 
@@ -247,18 +249,36 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             mlbash('ls -alt > mlnipet.NipetBuilder.standardizeFilenames.log')            
             for f = 1:length(unsorted)
                 r = struct([]);
-                idx = 1;
-                while isempty(r) && idx <= length(this.lmNamesRE{idx})
-                    r = regexp(unsorted{f}, this.lmNamesRE{idx}, 'names');
-                    idx = idx + 1;
-                end
-                if ~isempty(r)
-                    movefile(unsorted{f}, this.standardFramedName(str2double(r.frame)));
+                idxRE = 1;
+                while isempty(r) && idxRE <= length(this.lmNamesRE{idxRE})
+                    r = regexp(unsorted{f}, this.lmNamesRE{idxRE}, 'names');
+                    idxRE = idxRE + 1;
+                    if ~isempty(r)
+                        movefile(unsorted{f}, this.standardFramedName(str2double(r.frame)), 'f');
+                    end
                 end
             end
             nn = this.standardFramedNames('*');
             assert(~isempty(nn))
-        end        
+        end 
+        function        standardizeObsoleteFileNames(this)
+            %% rename NiftyPET frames with obsolete lmNamesAst{1} to specification of lmNamesAst{2}.
+            
+            obsolete = glob(this.lmNamesAst{1}); 
+            if isempty(obsolete) 
+                return
+            end          
+            lmNamesRE1 = [ ...
+                this.NIPET_PREFIX '_itr-(?<iterations>\d+)_t-(?<t0>\d+)-(?<t1>\d+)sec_' ...
+                this.nipetData_.lmTag '_time(?<frame>\d+).nii.gz'];
+            for ui = 1:length(obsolete)
+                r = regexp(obsolete{ui}, lmNamesRE1, 'names');
+                newfn = sprintf( ...
+                    '%s_t-%s-%ssec_itr-%s_%s_time%s.nii.gz', ...
+                    this.NIPET_PREFIX, r.t0, r.t1, r.iterations, this.nipetData_.lmTag, r.frame);
+                movefile(obsolete{ui}, newfn, 'f');
+            end
+        end
 		  
  		function this = NipetBuilder(varargin)
  			%% NIPETBUILDER
