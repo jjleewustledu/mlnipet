@@ -322,12 +322,8 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             this.builder_ = this.builder_.reconstituteFramesAC3;
             this.builder_ = this.builder_.avgtProduct;
             this.builder_.logger.save; 
-            if (mlpipeline.ResourcesRegistry.instance().debug)
-                save('mlnipet_CommonTracerDirector_instanceConstructResolvedAC.mat');
-            else                
-                this.builder_.deleteWorkFiles;
-                this.builder_.markAsFinished;
-            end
+            this.builder_.deleteWorkFiles;
+            this.builder_.markAsFinished;
         end
         function this = instanceConstructResolvedNAC(this)
             mlnipet.NipetBuilder.CreatePrototypeNAC(this.sessionData);            
@@ -469,10 +465,10 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
                     this.builder_ = this.builder_.partitionMonolith;
                     [this.builder_,epochs,reconstituted] = this.builder_.motionCorrectFrames; % returns composite builder
                 catch ME
-                    handexcept(ME, 'mlnipet:RuntimeError', 'CommonTracerDirector.tryMotionCorrectFrames');
-                    this.deleteEpochs__;
-                    this.builder_ = this.builder_.partitionMonolith;
-                    [this.builder_,epochs,reconstituted] = this.builder_.motionCorrectFrames;
+                    handwarning(ME, 'mlnipet:RuntimeError', 'CommonTracerDirector.tryMotionCorrectFrames');
+%                    this.deleteEpochs__;
+%                    this.builder_ = this.builder_.partitionMonolith;
+%                    [this.builder_,epochs,reconstituted] = this.builder_.motionCorrectFrames;
                 end
             end
         end        
