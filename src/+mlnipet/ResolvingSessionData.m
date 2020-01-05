@@ -182,15 +182,14 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end        
         function obj  = tracerResolved(this, varargin)
-            if (this.attenuationCorrected) %% FIXME, KLUDGE
-                pth = this.tracerLocation;
-            else
-                pth = this.scanPath;
-            end
+            that = this;
+            that.rnumber = min(1, this.rnumber - 1);
             fqfn = fullfile( ...
-                pth, ...
-                sprintf('%s_%s%s', this.tracerRevision('typ', 'fp'), ...
-                        this.resolveTag, this.filetypeExt));
+                this.tracerLocation, ...
+                sprintf('%s_%s%s', ...
+                        this.tracerRevision('typ', 'fp'), ...
+                        that.resolveTag, ...
+                        this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end  
         function obj  = tracerResolvedFinal(this, varargin)
@@ -200,15 +199,16 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             addParameter(ip, 'resolvedFrame', this.supEpoch, @isnumeric); 
             parse(ip, varargin{:});
             
-            sessd1 = this;
-            sessd1.rnumber = 1;
+            that = this;
+            that.rnumber = min(1, this.rnumber - 1);
             if (~this.attenuationCorrected)
                 this.epoch = ip.Results.resolvedEpoch;
             end
-            sessd1.epoch = ip.Results.resolvedEpoch;
+            that.epoch = ip.Results.resolvedEpoch;
             fqfn = sprintf('%s_%s%s', ...
                            this.tracerRevision('typ', 'fqfp'), ...
-                           sessd1.resolveTagFrame(ip.Results.resolvedFrame), this.filetypeExt);
+                           that.resolveTagFrame(ip.Results.resolvedFrame), ...
+                           this.filetypeExt);
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function obj  = tracerResolvedFinalAvgt(this, varargin)
