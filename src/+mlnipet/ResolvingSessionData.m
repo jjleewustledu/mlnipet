@@ -195,14 +195,20 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
         function obj  = tracerResolvedFinal(this, varargin)
             ip = inputParser;
             ip.KeepUnmatched = true;
-            addParameter(ip, 'resolvedEpoch', 1:this.supEpoch, @isnumeric); 
-            addParameter(ip, 'resolvedFrame', this.supEpoch, @isnumeric); 
+            addParameter(ip, 'simpler', false)
+            addParameter(ip, 'resolvedEpoch', 1:this.supEpoch, @isnumeric)
+            addParameter(ip, 'resolvedFrame', this.supEpoch, @isnumeric)
             parse(ip, varargin{:});
+            ipr = ip.Results;
+            if ipr.simpler
+                ipr.resolvedEpoch = [];
+                ipr.resolvedFrame = length(this.taus);
+            end
             
             that = this;
             that.rnumber = max(1, this.rnumber - 1);
             if (~this.attenuationCorrected)
-                this.epoch = ip.Results.resolvedEpoch;
+                this.epoch = ipr.resolvedEpoch;
             end
             that.epoch = ip.Results.resolvedEpoch;
             fqfn = sprintf('%s_%s%s', ...
