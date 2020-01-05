@@ -35,6 +35,13 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
                     mirrorUmap.ensureSingle;
                     ic2 = ic2 + mirrorUmap;
                 end
+                if strcmpi(sessd.tracer, 'OC') || strcmpi(sessd.tracer, 'HO')                    
+                    mirrorUmap = mlnipet.CommonTracerDirector.getOOMirrorForTracer(sessd);
+                    if ~isempty(mirrorUmap)
+                        mirrorUmap.ensureSingle;
+                        ic2 = ic2 + mirrorUmap;
+                    end
+                end
             catch ME
                 handwarning(ME, 'mlnipet:RuntimeWarning', ...
                     'CommonTracerDirector.addMirrorUmap could not generate registered mirror umap')
@@ -118,6 +125,35 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
                 warning('mlnipet:RuntimeWarning', 'KLUDGE:TracerDirector2.flipKLUDGE____ is active');
                 ic2 = ic2.flip(1);
                 ic2.ensureSingle;
+            end
+        end
+        function umap = getOOMirrorForTracer(sessd)
+            import mlnipet.CommonTracerDirector.*
+            import mlfourd.ImagingContext2
+            umap = [];
+            pwd0 = pushd(sessd.tracerOutputPetLocation());
+            mirrorLoc = getProximalOOLocation(sessd);
+            ooUmapSynth = ImagingContext2(fullfile(mirrorLoc, 'umapSynth.nii.gz'));
+            if isfile(ooUmapSynth.fqfilename)
+                ooUmapSynth = flipKLUDGE____(ooUmapSynth);
+                nii = ooUmapSynth.nifti;
+                img = zeros(344,344,127);
+                img(141:205,251:300,25:127) = nii.img(141:205,251:300,25:127,1);
+                nii.img = img;
+                umap = ImagingContext2(nii);
+            end            
+            popd(pwd0)
+        end
+        function loc  = getProximalOOLocation(sessd)
+            loc = pwd;
+            tracerdt = location2datetime(sessd.tracerLocation);
+            separation = days(1);
+            for ooLocations = globFoldersT(fullfile(sessd.sessionPath, 'OO_DT*.000000-Converted-AC'))
+                oodt = location2datetime(ooLocations{1});
+                if abs(tracerdt - oodt) < separation
+                    separation = tracerdt - oodt;
+                    loc = ooLocations{1};
+                end
             end
         end
         function tmp  = migrationTeardown(fps, logs, dest_fqfp0, dest)
@@ -357,7 +393,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             this.builder_.markAsFinished;
         end
         function this = instanceConstructResolvedNAC(this)
-            mlnipet.NipetBuilder.CreatePrototypeNAC(this.sessionData);            
+            mlnipet.NipetBuilder.CreatePrototypeNAC(this.sessionData);   
             try
                 this = this.packageTracerResolvedR1;
             catch ME
@@ -369,7 +405,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
                     end                  
                     if isfolder(fullfile(sessd.scanPath, 'LM', '')) && ...
                        isfolder(fullfile(sessd.scanPath, 'norm', ''))
-                       
+
                         movefile(fullfile(sessd.scanPath, 'LM', ''), this.sessionData.scanPath)
                         movefile(fullfile(sessd.scanPath, 'norm', ''), this.sessionData.scanPath)
                         this = this.packageTracerResolvedR1;
@@ -377,7 +413,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
                 else
                     rethrow(ME)
                 end
-            end
+            end                
             this.builder_ = this.builder_.prepareMprToAtlasT4;
             [this.builder_,epochs,reconstituted] = this.tryMotionCorrectFrames(this.builder_);          
             reconstituted = reconstituted.motionCorrectCTAndUmap;
