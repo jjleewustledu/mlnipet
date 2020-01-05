@@ -203,22 +203,14 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
         function obj  = tracerResolvedFinal(this, varargin)
             ip = inputParser;
             ip.KeepUnmatched = true;
-            addParameter(ip, 'simpler', false)
-            addParameter(ip, 'resolvedEpoch', 1:this.supEpoch, @isnumeric)
-            addParameter(ip, 'resolvedFrame', this.supEpoch, @isnumeric)
+            addParameter(ip, 'resolvedEpoch', this.theResolvedEpoch, @isnumeric)
+            addParameter(ip, 'resolvedFrame', this.theResolvedFrame, @isnumeric)
             parse(ip, varargin{:});
             ipr = ip.Results;
-            if ipr.simpler
-                ipr.resolvedEpoch = [];
-                ipr.resolvedFrame = length(this.taus);
-            end
-            
+             
+            this.epoch = ipr.resolvedEpoch;
             that = this;
-            that.rnumber = max(1, this.rnumber - 1);
-            if (~this.attenuationCorrected)
-                this.epoch = ipr.resolvedEpoch;
-            end
-            that.epoch = ipr.resolvedEpoch;
+            that.rnumber = max(1, this.rnumber - 1);          
             fqfn = fullfile( ...
                 this.tracerLocation, ...
                 sprintf('%s_%s%s', ...
@@ -332,6 +324,23 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
     
     properties (Access = protected)
         fractionalImageFrameThresh_
+    end
+    
+    methods (Access = protected)
+        function ep = theResolvedEpoch(this)
+            if this.attenuationCorrected
+                ep = [];
+            else
+                ep = 1:this.supEpoch;
+            end
+        end
+        function fr = theResolvedFrame(this)
+            if this.attenuationCorrected
+                fr = length(this.taus);
+            else
+                fr = this.supEpoch;
+            end
+        end
     end
 
 	%  Created with Newcl by John J. Lee after newfcn by Frank Gonzalez-Morphy
