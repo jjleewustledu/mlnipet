@@ -192,6 +192,14 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
                         this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end  
+        function obj  = tracerResolvedAvgt(this, varargin)
+            fqfn = sprintf('%s_avgt%s', this.tracerResolved('typ', 'fqfp', varargin{:}), this.filetypeExt);
+            obj  = this.fqfilenameObject(fqfn, varargin{:});
+        end  
+        function obj  = tracerResolvedSumt(this, varargin)
+            fqfn = sprintf('%s_sumt%s', this.tracerResolved('typ', 'fqfp', varargin{:}), this.filetypeExt);
+            obj  = this.fqfilenameObject(fqfn, varargin{:});
+        end  
         function obj  = tracerResolvedFinal(this, varargin)
             ip = inputParser;
             ip.KeepUnmatched = true;
@@ -223,23 +231,10 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             fqfn = sprintf('%s_avgt%s', this.tracerResolvedFinal('typ', 'fqfp', varargin{:}), this.filetypeExt);
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
-        function obj  = tracerResolvedFinalOnAtl(this, varargin)
-            fqfn = fullfile(this.sessionPath, ...
-                sprintf('%s_on_%s_%i%s', this.tracerResolvedFinal('typ', 'fp', varargin{:}), this.studyAtlas.fileprefix, this.atlVoxelSize, this.filetypeExt));
-            obj  = this.fqfilenameObject(fqfn, varargin{:});
-        end
         function obj  = tracerResolvedFinalSumt(this, varargin)
             fqfn = sprintf('%s_sumt%s', this.tracerResolvedFinal('typ', 'fqfp', varargin{:}), this.filetypeExt);
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
-        function obj  = tracerResolvedAvgt(this, varargin)
-            fqfn = sprintf('%s_%s_avgt%s', this.tracerRevision('typ', 'fqfp', varargin{:}), this.resolveTag, this.filetypeExt);
-            obj  = this.fqfilenameObject(fqfn, varargin{:});
-        end  
-        function obj  = tracerResolvedSumt(this, varargin)
-            fqfn = sprintf('%s_%s_sumt%s', this.tracerRevision('typ', 'fqfp', varargin{:}), this.resolveTag, this.filetypeExt);
-            obj  = this.fqfilenameObject(fqfn, varargin{:});
-        end  
         function obj  = tracerRevision(this, varargin)
             %  @param named rLabel is char and overrides any specifications of r-number;
             %  it may be useful for generating filenames such as '*r1r2_to_resolveTag_t4'.
