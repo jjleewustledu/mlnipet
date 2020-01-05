@@ -183,7 +183,7 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
         end        
         function obj  = tracerResolved(this, varargin)
             that = this;
-            that.rnumber = min(1, this.rnumber - 1);
+            that.rnumber = max(1, this.rnumber - 1);
             fqfn = fullfile( ...
                 this.tracerLocation, ...
                 sprintf('%s_%s%s', ...
@@ -200,7 +200,7 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             parse(ip, varargin{:});
             
             that = this;
-            that.rnumber = min(1, this.rnumber - 1);
+            that.rnumber = max(1, this.rnumber - 1);
             if (~this.attenuationCorrected)
                 this.epoch = ip.Results.resolvedEpoch;
             end
