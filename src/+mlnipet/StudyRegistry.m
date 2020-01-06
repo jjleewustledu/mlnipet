@@ -38,7 +38,7 @@ classdef (Abstract) StudyRegistry < handle & mlpet.StudyRegistry
             g = getenv('PROJECTS_DIR');
         end        
         function     set.projectsDir(~, s)
-            assert(isdir(s));
+            assert(isfolder(s));
             setenv('PROJECTS_DIR', s);
         end
         function g = get.subjectsDir(~)
