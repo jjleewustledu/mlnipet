@@ -5,7 +5,7 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
  	%  was created 18-Aug-2017 16:40:39 by jjlee,
  	%  last modified $LastChangedDate$ and placed into repository /Users/jjlee/Local/src/mlcvl/mlpipeline/src/+mlpipeline.
  	%% It was developed on Matlab 9.2.0.538062 (R2017a) for MACI64.  Copyright 2017 John Joowon Lee.
- 	    
+    
 	properties
         tracerBlurArg = 7.5
         umapBlurArg = 1.5
@@ -18,6 +18,8 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
         doseAdminDatetimeTag
         fractionalImageFrameThresh % of median dynamic image-frame intensities
         lmTag
+        referenceTracer        
+        ReferenceTracer
         t4ResolveBuilderBlurArg
         useNiftyPet
     end
@@ -77,6 +79,18 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             end
             g = 'createDynamic2Carney';
         end 
+        function g    = get.referenceTracer(this)
+            g = lower(this.referenceTracer_);
+        end
+        function this = set.referenceTracer(this, s)
+            this.referenceTracer_ = lower(s);
+        end
+        function g    = get.ReferenceTracer(this)
+            g = upper(this.referenceTracer_);
+        end
+        function this = set.ReferenceTracer(this, s)
+            this.referenceTracer_ = lower(s);
+        end
         function g    = get.t4ResolveBuilderBlurArg(this)
             g = this.tracerBlurArg;
         end   
@@ -324,6 +338,7 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
     
     properties (Access = protected)
         fractionalImageFrameThresh_
+        referenceTracer_
     end
     
     methods (Access = protected)
