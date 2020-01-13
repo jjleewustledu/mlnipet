@@ -80,16 +80,18 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             g = 'createDynamic2Carney';
         end 
         function g    = get.referenceTracer(this)
-            g = lower(this.referenceTracer_);
+            g = lower(this.ReferenceTracer);
         end
         function this = set.referenceTracer(this, s)
-            this.referenceTracer_ = lower(s);
+            assert(ischar(s))
+            this.referenceTracer_ = s;
         end
         function g    = get.ReferenceTracer(this)
             g = upper(this.referenceTracer_);
         end
         function this = set.ReferenceTracer(this, s)
-            this.referenceTracer_ = lower(s);
+            assert(ischar(s))
+            this.referenceTracer_ = s;
         end
         function g    = get.t4ResolveBuilderBlurArg(this)
             g = this.tracerBlurArg;
@@ -338,7 +340,7 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
     
     properties (Access = protected)
         fractionalImageFrameThresh_
-        referenceTracer_
+        referenceTracer_ % needs to be in the scope of value-classed mlnipet.ResolvingSessionData for external resolve operations
     end
     
     methods (Access = protected)
