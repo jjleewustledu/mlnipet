@@ -13,8 +13,6 @@ classdef StudyData < handle & mlpipeline.StudyData
         dicomExtension
         freesurfersDir
         rawdataDir
-        subjectsDir
-        subjectsFolder
     end
     
     methods
@@ -27,36 +25,16 @@ classdef StudyData < handle & mlpipeline.StudyData
         function d = get.freesurfersDir(~)
             d = fullfile(getenv('PPG'), 'freesurfer', '');
         end
-        function d = get.rawdataDir(~)
-            d = mlnipet.Resourcese.instance.rawdataDir;
-        end
-        function g = get.subjectsDir(~)
-            g = mlnipet.Resourcese.instance.subjectsDir;
-        end
-        function g = get.subjectsFolder(this)
-            g = basename(this.subjectsDir);
+        function d = get.rawdataDir(this)
+            d = this.registry_.rawdataDir;
         end
         
         %%
         
         function a    = seriesDicomAsterisk(this, fqdn)
-            assert(isdir(fqdn));
-            assert(isdir(fullfile(fqdn, 'DICOM')));
+            assert(isfolder(fqdn));
+            assert(isfolder(fullfile(fqdn, 'DICOM')));
             a = fullfile(fqdn, 'DICOM', ['*' this.dicomExtension]);
-        end        
-        function f    = subjectsDirFqdns(this)
-            if (isempty(this.subjectsDir))
-                f = {};
-                return
-            end
-            
-            dt = mlsystem.DirTools(this.subjectsDir);
-            f = {};
-            for di = 1:length(dt.dns)
-                if (strncmp(dt.dns{di}, 'NP', 2) || strncmp(dt.dns{di}, 'HY', 2))
-                    f = [f dt.fqdns(di)]; %#ok<AGROW>
-                end
-            end
         end
         
  		function this = StudyData(varargin)
