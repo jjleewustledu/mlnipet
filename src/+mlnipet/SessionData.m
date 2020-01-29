@@ -194,31 +194,31 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                 sprintf('%s.crv', this.sessionFolder));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
-        function obj = cbf(this, varargin)
+        function obj  = cbf(this, varargin)
             this.tracer = 'HO';
             obj = this.petObject('cbf', varargin{:});
         end
-        function obj = cbv(this, varargin)
+        function obj  = cbv(this, varargin)
             this.tracer = 'OC';
             obj = this.petObject('cbv', varargin{:});
         end
         function obj  = CCIRRadMeasurements(this)
             obj = mldata.CCIRRadMeasurements.date2filename(this.datetime);
         end
-        function obj = cmro2(this, varargin)
+        function obj  = cmro2(this, varargin)
             this.tracer = 'OO';
             obj = this.petObject('cmro2', varargin{:});
         end
-        function obj = ct(this, varargin)
+        function obj  = ct(this, varargin)
             obj = this.ctObject('ct', varargin{:});
         end
-        function obj = ctMasked(this, varargin)
+        function obj  = ctMasked(this, varargin)
             obj = this.ctObject('ctMasked', varargin{:});
         end
-        function obj = ctMask(this, varargin)
+        function obj  = ctMask(this, varargin)
             obj = this.ctObject('ctMask', varargin{:});
         end        
-        function obj = ctObject(this, varargin)
+        function obj  = ctObject(this, varargin)
             ip = inputParser;
             ip.KeepUnmatched = true;
             addRequired( ip, 'desc', @ischar);
@@ -233,29 +233,29 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         function dt   = datetime(this)
             dt = mlpet.DirToolTracer.folder2datetime(this.scanFolder);
         end
-        function obj = fdg(this, varargin)
+        function obj  = fdg(this, varargin)
             this.tracer = 'FDG';
             obj = this.petObject('fdg', varargin{:});
         end
-        function obj = gluc(this, varargin)
+        function obj  = gluc(this, varargin)
             obj = this.petObject('gluc', varargin{:});
         end 
         function loc  = hdrinfoLocation(this, varargin)
             loc = this.sessionLocation(varargin{:});
         end
-        function obj = ho(this, varargin)
+        function obj  = ho(this, varargin)
             this.tracer = 'HO';
             obj = this.petObject('ho', varargin{:});
         end
-        function obj = oc(this, varargin)
+        function obj  = oc(this, varargin)
             this.tracer = 'OC';
             obj = this.petObject('oc', varargin{:});
         end
-        function obj = oef(this, varargin)
+        function obj  = oef(this, varargin)
             this.tracer = 'OO';
             obj = this.petObject('oef', varargin{:});
         end
-        function obj = oo(this, varargin)
+        function obj  = oo(this, varargin)
             this.tracer = 'OO';
             obj = this.petObject('oo', varargin{:});
         end
@@ -304,7 +304,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         function f    = scanPathWithAC(this, varargin)
             f = fullfile(this.sessionPath, this.scanFolderWithAC(varargin{:}));
         end
-        function obj = tr(this, varargin)
+        function obj  = tr(this, varargin)
             %% transmission scan
             
             obj = this.petObject('tr', varargin{:});

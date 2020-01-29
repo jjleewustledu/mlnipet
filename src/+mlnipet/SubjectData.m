@@ -215,6 +215,12 @@ classdef SubjectData < mlpipeline.SubjectData
                 end
             end
         end
+        function sub  = subjectID_to_sub(~, sid)
+            %% abbreviates sub-CNDA01_S12345 -> sub-S12345
+            
+            split = strsplit(sid, '_');
+            sub = ['sub-' split{2}];
+        end
         function fp   = T1001_fileprefix(~, prj_ses_pth, scn, t)
             %% tracer 'fdg' -> fileprefix 'fdgr2_op_fdge1to4r1_frame4'
             %  @param prj_ses_pth is f.q. path
