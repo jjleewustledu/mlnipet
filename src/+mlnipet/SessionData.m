@@ -203,7 +203,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             obj = this.petObject('cbv', varargin{:});
         end
         function obj  = CCIRRadMeasurements(this)
-            obj = mldata.CCIRRadMeasurements.date2filename(this.datetime);
+            obj = mlpet.CCIRRadMeasurements.date2filename(this.datetime);
         end
         function obj  = cmro2(this, varargin)
             this.tracer = 'OO';

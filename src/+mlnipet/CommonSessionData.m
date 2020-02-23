@@ -124,7 +124,7 @@ classdef CommonSessionData < mlnipet.BidsSessionData
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function obj  = CCIRRadMeasurements(this)
-            obj = mldata.CCIRRadMeasurements.date2filename(this.datetime);
+            obj = mlpet.CCIRRadMeasurements.date2filename(this.datetime);
         end
         function loc  = tracerListmodeLocation(this, varargin)
             %% Siemens legacy
