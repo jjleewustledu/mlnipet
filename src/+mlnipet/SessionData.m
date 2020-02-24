@@ -425,8 +425,24 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                 g = this.scanFolder_;
                 return
             end
-            assert(~isempty(this.tracer_),               'mlpipeline:AssertionError', 'SessionData.get.scanFolder');
-            assert(~isempty(this.attenuationCorrected_), 'mlpipeline:AssertionError', 'SessionData.get.scanFolder')
+            if isempty(this.tracer_) || isempty(this.attenuationCorrected_)
+                g = '';
+                dt = datetime(datestr(now));
+                for globbed = globFoldersT(fullfile(this.sessionPath, '*_DT*.000000-Converted-*'))
+                    base = mybasename(globbed{1});
+                    re = regexp(base, ...
+                        '\S+_DT(?<yyyy>\d{4})(?<mm>\d{2})(?<dd>\d{2})(?<HH>\d{2})(?<MM>\d{2})(?<SS>\d{2})\.\d{6}-Converted\S*', ...
+                        'names');
+                    assert(~isempty(re))
+                    dt1 = datetime(str2double(re.yyyy), str2double(re.mm), str2double(re.dd), ...
+                        str2double(re.HH), str2double(re.MM), str2double(re.SS));
+                    if dt1 < dt
+                        dt = dt1; % find earliest scan
+                        g = base;
+                    end                    
+                end                
+                return
+            end
             dtt = mlpet.DirToolTracer( ...
                 'tracer', fullfile(this.sessionPath, this.tracer_), ...
                 'ac', this.attenuationCorrected_);            
@@ -527,9 +543,11 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         function this = adjustAttenuationCorrectedFromScanFolder(this)
             if (contains(this.scanFolder, '-NAC'))
                 this.attenuationCorrected_ = false;
+                return
             end
             if (contains(this.scanFolder, '-AC'))
                 this.attenuationCorrected_ = true;
+                return
             end
         end        
         function g    = alternativeTaus(this)
