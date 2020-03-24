@@ -11,6 +11,7 @@ classdef Resources < handle & mlpatterns.Singleton
     properties (Constant)
         FLIP1 = true % bug at interface with NIPET
         PREFERRED_TIMEZONE = 'America/Chicago'
+        CCIR_RAD_MEASUREMENTS_DIR = fullfile(getenv('HOME'), 'Documents', 'private', '')
     end
     
     
