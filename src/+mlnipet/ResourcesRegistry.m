@@ -9,6 +9,7 @@ classdef (Sealed) ResourcesRegistry < handle & mlpatterns.Singleton2
 	properties 		
         FLIP1 = true % bug at interface with NIPET
         fslroiArgs = '86 172 86 172 0 -1'
+        rnumberFinal = 2
     end
     
     properties (Dependent)
