@@ -64,7 +64,7 @@ classdef SubjectData < mlpipeline.SubjectData
                 tf = false;
                 return
             end
-            globbed = glob( ...
+            globbed = globFoldersT( ...
                 fullfile(getenv('SUBJECTS_DIR'), subf, sesf, '*_DT*.000000-Converted-AC', ''));
             tf = ~isempty(globbed);
         end
