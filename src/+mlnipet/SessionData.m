@@ -14,6 +14,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         indicesLogical     
         isotope
         itr
+        scannerKit
         studyCensus
         tauIndices % use to exclude late frames from builders of AC; e.g., taus := taus(tauIndices)
         tauMultiplier
@@ -95,6 +96,9 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                 return
             end
             g = 4;
+        end
+        function g    = get.scannerKit(this)
+            g = this.scannerKit_;
         end
         function g    = get.studyCensus(this)
             g = this.getStudyCensus;
@@ -511,14 +515,16 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             
             ip = inputParser;
             ip.KeepUnmatched = true;
-            addParameter(ip, 'abs', false,        @islogical);
-            addParameter(ip, 'ac', false,         @islogical);
-            addParameter(ip, 'tracer', '',        @ischar);
+            addParameter(ip, 'abs', false, @islogical);
+            addParameter(ip, 'ac', false, @islogical);
+            addParameter(ip, 'scannerKit', 'mlsiemens.BiographMMRKit', @ischar)
+            addParameter(ip, 'tracer', '', @ischar);
             parse(ip, varargin{:}); 
             ipr = ip.Results;
 
             this.absScatterCorrected_ = ipr.abs;
             this.attenuationCorrected_ = ipr.ac;
+            this.scannerKit_ = ipr.scannerKit;
             this.tracer_ = ipr.tracer;
             this = this.adjustAttenuationCorrectedFromScanFolder;
             
@@ -536,6 +542,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
     properties (Access = protected)
         absScatterCorrected_
         attenuationCorrected_
+        scannerKit_
         tracer_
     end
     
