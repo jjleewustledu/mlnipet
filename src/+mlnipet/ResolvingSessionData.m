@@ -209,11 +209,11 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end  
         function obj  = tracerResolvedAvgt(this, varargin)
-            fqfn = sprintf('%s_avgt%s', this.tracerResolved('typ', 'fqfp', varargin{:}), this.filetypeExt);
+            fqfn = sprintf('%s_avgt%s', this.tracerResolved(varargin{:}, 'typ', 'fqfp'), this.filetypeExt);
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end  
         function obj  = tracerResolvedSumt(this, varargin)
-            fqfn = sprintf('%s_sumt%s', this.tracerResolved('typ', 'fqfp', varargin{:}), this.filetypeExt);
+            fqfn = sprintf('%s_sumt%s', this.tracerResolved(varargin{:}, 'typ', 'fqfp'), this.filetypeExt);
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end  
         function obj  = tracerResolvedFinal(this, varargin)
@@ -236,11 +236,11 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function obj  = tracerResolvedFinalAvgt(this, varargin)
-            fqfn = sprintf('%s_avgt%s', this.tracerResolvedFinal('typ', 'fqfp', varargin{:}), this.filetypeExt);
+            fqfn = sprintf('%s_avgt%s', this.tracerResolvedFinal(varargin{:}, 'typ', 'fqfp'), this.filetypeExt);
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function obj  = tracerResolvedFinalSumt(this, varargin)
-            fqfn = sprintf('%s_sumt%s', this.tracerResolvedFinal('typ', 'fqfp', varargin{:}), this.filetypeExt);
+            fqfn = sprintf('%s_sumt%s', this.tracerResolvedFinal(varargin{:}, 'typ', 'fqfp'), this.filetypeExt);
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function obj  = tracerResolvedOpSubject(this, varargin)
@@ -269,11 +269,11 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function obj  = tracerRevisionAvgt(this, varargin)
-            fqfn = sprintf('%s_avgt%s', this.tracerRevision('typ', 'fqfp', varargin{:}), this.filetypeExt);
+            fqfn = sprintf('%s_avgt%s', this.tracerRevision(varargin{:}, 'typ', 'fqfp'), this.filetypeExt);
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end     
         function obj  = tracerRevisionSumt(this, varargin)
-            fqfn = sprintf('%s_sumt%s', this.tracerRevision('typ', 'fqfp', varargin{:}), this.filetypeExt);
+            fqfn = sprintf('%s_sumt%s', this.tracerRevision(varargin{:}, 'typ', 'fqfp'), this.filetypeExt);
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end  
         function obj  = umapPhantom(this, varargin)
