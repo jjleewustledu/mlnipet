@@ -24,6 +24,88 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
         useNiftyPet
     end
     
+    methods (Static)
+        function jitOn222(fexp)
+            %% quickly registers on TRIO_Y_NDC_222
+            %  @param fexp is char, e.g., 'subjects/sub-S58163/resampling_restricted/brain_222.4dfp.hdr'
+            %                       e.g., '/scratch/jjlee/Singularity/subjects/sub-S58163/resampling_restricted/fdgdt*_222.4dfp.hdr'
+            
+            if ~lstrfind(fexp, '_222')
+                return
+            end 
+            if ~lstrfind(fexp, getenv('SINGULARITY_HOME'))
+                assert(strncmp(fexp, 'subjects', 8))
+                fexp = [getenv('SINGULARITY_HOME') fexp];
+            end
+            fv = mlfourdfp.FourdfpVisitor();
+            for globFolder = globT(myfileparts(fexp))
+                pwd0 = pushd(globFolder{1});
+                pwdt4 = myfileparts(globFolder{1});
+                ss = strsplit(basename(fexp), '_222.4dfp');
+                fexpNoAtl = [ss{1} '.4dfp.hdr'];            
+                for globNoAtl = globT(fexpNoAtl)
+                    if regexp(globNoAtl{1}, '[a-z]{4,5}\d{8,14}\.4dfp\.hdr')
+                        fpNoAtl = myfileprefix(globNoAtl{1});
+                        fpOnAtl = [mybasename(fpNoAtl) '_222'];
+                        if ~isfile([fpOnAtl '.4dfp.hdr'])
+                            t4Atl = fullfile(pwdt4, 'T1001_to_TRIO_Y_NDC_t4');
+                            assert(isfile(t4Atl))
+                            t4Tracer = [fpNoAtl '_to_T1001_t4'];
+                            assert(isfile(t4Tracer))
+                            t4 = [fpNoAtl '_to_TRIO_Y_NDC_t4'];
+                            if ~isfile(t4)
+                                fv.t4_mul(t4Tracer, t4Atl, t4)
+                            end
+                            fv.t4img_4dfp(t4, fpNoAtl, 'out', [fpNoAtl '_222'], 'options', '-O222')
+                        end
+                        continue
+                    end
+                    if lstrfind(globNoAtl, 'brain') || lstrfind(globNoAtl, 'parc')
+                        fpNoAtl = myfileprefix(globNoAtl{1});
+                        fpOnAtl = [mybasename(fpNoAtl) '_222'];
+                        if ~isfile([fpOnAtl '.4dfp.hdr'])
+                            t4Atl = fullfile(pwdt4, 'T1001_to_TRIO_Y_NDC_t4');
+                            assert(isfile(t4Atl))
+                            fv.t4img_4dfp(t4Atl, fpNoAtl, 'out', [fpNoAtl '_222'], 'options', '-O222')
+                        end                        
+                        continue
+                    end
+                end
+                popd(pwd0) 
+            end
+        end      
+        function jitOnT1001(fexp)
+            %% quickly registers on T1001
+            %  @param fexp is char, e.g., 'subjects/sub-S58163/resampling_restricted/ocdt20190523122016_on_T1001.4dfp.hdr'
+            %  @param fexp is char, e.g., '/Users/jjlee/Singularity/subjects/sub-S58163/resampling_restricted/ocdt20190523122016_on_T1001.4dfp.hdr'
+            
+            if ~lstrfind(fexp, '_on_T1001')
+                return
+            end
+            if ~lstrfind(fexp, getenv('SINGULARITY_HOME'))
+                assert(strncmp(fexp, 'subjects', 8))
+                fexp = [getenv('SINGULARITY_HOME') fexp];
+            end
+            for globFolder = globT(myfileparts(fexp))
+                pwd0 = pushd(globFolder{1});
+                ss = strsplit(basename(fexp), '_on_T1001.4dfp');
+                fexpNoT1 = [ss{1} '.4dfp.hdr'];            
+                for globNoT1 = globT(fexpNoT1)
+                    if regexp(globNoT1{1}, '[a-z]{4,5}\d{8,14}\.4dfp\.hdr')
+                        fpNoT1 = myfileprefix(globNoT1{1});
+                        fnOnT1 = [mybasename(fpNoT1) '_on_T1001.4dfp.hdr'];
+                        if ~isfile(fnOnT1)                    
+                            fv = mlfourdfp.FourdfpVisitor();
+                            t4 = [fpNoT1 '_to_T1001_t4'];
+                            fv.t4img_4dfp(t4, fpNoT1, 'options', '-OT1001')
+                        end
+                    end
+                end
+                popd(pwd0) 
+            end
+        end
+    end
+    
 	methods 
         
         %% GET/SET
@@ -247,9 +329,9 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             fqfn = fullfile( ...
                 this.subjectPath, 'resampling_restricted', ...
                 sprintf('%sdt%s%s', ...
-                           lower(this.tracer), ...
-                           datestr(this.datetime, 'yyyymmddHHMMSS'), ...
-                           this.filetypeExt));
+                        lower(this.tracer), ...
+                        datestr(this.datetime, 'yyyymmddHHMMSS'), ...
+                        this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function obj  = tracerRevision(this, varargin)

@@ -615,11 +615,6 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                 if (a > length(tau) || b > length(tau)); break; end
             end
         end
-        function obj  = visitMapOnAtl(this, map, varargin)
-            fqfn = fullfile(this.vLocation, ...
-                sprintf('%s_on_%s_%i%s', map, this.studyAtlas.fileprefix, this.atlVoxelSize, this.filetypeExt));
-            obj  = this.fqfilenameObject(fqfn, varargin{:});
-        end
     end
 
 	%  Created with Newcl by John J. Lee after newfcn by Frank Gonzalez-Morphy
