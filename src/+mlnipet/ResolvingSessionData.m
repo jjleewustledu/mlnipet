@@ -25,23 +25,30 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
     end
     
     methods (Static)
-        function jitOn222(fexp)
+        function jitOn222(varargin)
             %% quickly registers on TRIO_Y_NDC_222
             %  @param fexp is char, e.g., 'subjects/sub-S58163/resampling_restricted/brain_222.4dfp.hdr'
             %                       e.g., '/scratch/jjlee/Singularity/subjects/sub-S58163/resampling_restricted/fdgdt*_222.4dfp.hdr'
+            %  @param options is char, default := '-O222'
             
-            if ~lstrfind(fexp, '_222')
+            ip = inputParser;
+            addRequired(ip, 'fexp', @ischar)
+            addOptional(ip, 'options', '-O222', @ischar)
+            parse(ip, varargin{:})
+            ipr = ip.Results;
+            
+            if ~lstrfind(ipr.fexp, '_222')
                 return
             end 
-            if ~lstrfind(fexp, getenv('SINGULARITY_HOME'))
-                assert(strncmp(fexp, 'subjects', 8))
-                fexp = [getenv('SINGULARITY_HOME') fexp];
+            if ~lstrfind(ipr.fexp, getenv('SINGULARITY_HOME'))
+                assert(strncmp(ipr.fexp, 'subjects', 8))
+                ipr.fexp = [getenv('SINGULARITY_HOME') ipr.fexp];
             end
             fv = mlfourdfp.FourdfpVisitor();
-            for globFolder = globT(myfileparts(fexp))
+            for globFolder = globT(myfileparts(ipr.fexp))
                 pwd0 = pushd(globFolder{1});
                 pwdt4 = myfileparts(globFolder{1});
-                ss = strsplit(basename(fexp), '_222.4dfp');
+                ss = strsplit(basename(ipr.fexp), '_222.4dfp');
                 fexpNoAtl = [ss{1} '.4dfp.hdr'];            
                 for globNoAtl = globT(fexpNoAtl)
                     if regexp(globNoAtl{1}, '[a-z]{4,5}\d{8,14}\.4dfp\.hdr')
@@ -56,7 +63,7 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
                             if ~isfile(t4)
                                 fv.t4_mul(t4Tracer, t4Atl, t4)
                             end
-                            fv.t4img_4dfp(t4, fpNoAtl, 'out', [fpNoAtl '_222'], 'options', '-O222')
+                            fv.t4img_4dfp(t4, fpNoAtl, 'out', [fpNoAtl '_222'], 'options', ipr.options)
                         end
                         continue
                     end
@@ -66,7 +73,7 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
                         if ~isfile([fpOnAtl '.4dfp.hdr'])
                             t4Atl = fullfile(pwdt4, 'T1001_to_TRIO_Y_NDC_t4');
                             assert(isfile(t4Atl))
-                            fv.t4img_4dfp(t4Atl, fpNoAtl, 'out', [fpNoAtl '_222'], 'options', '-O222')
+                            fv.t4img_4dfp(t4Atl, fpNoAtl, 'out', [fpNoAtl '_222'], 'options', ipr.options)
                         end                        
                         continue
                     end
