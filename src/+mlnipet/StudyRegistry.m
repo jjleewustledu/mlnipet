@@ -11,6 +11,7 @@ classdef (Abstract) StudyRegistry < handle & mlpet.StudyRegistry
     end
     
     properties (Dependent)
+        earliestCalibrationDatetime
         fslroiArgs        
         projectsDir
         subjectsDir
@@ -31,7 +32,10 @@ classdef (Abstract) StudyRegistry < handle & mlpet.StudyRegistry
         
         %% GET
         
-        function g = get.fslroiArgs(this)
+        function g = get.earliestCalibrationDatetime(~)
+            g = datetime(2016,7,19, 'TimeZone', 'America/Chicago');
+        end
+        function g = get.fslroiArgs(~)
             g = mlnipet.ResourcesRegistry.instance().fslroiArgs;
         end        
         function g = get.projectsDir(~)
@@ -45,7 +49,7 @@ classdef (Abstract) StudyRegistry < handle & mlpet.StudyRegistry
             g = getenv('SUBJECTS_DIR');
         end        
         function     set.subjectsDir(~, s)
-            assert(isdir(s));
+            assert(isfolder(s));
             setenv('SUBJECTS_DIR', s);
         end
         
