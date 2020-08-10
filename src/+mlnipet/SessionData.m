@@ -14,6 +14,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         indicesLogical     
         isotope
         itr
+        proximityTable
         scannerKit
         studyCensus
         tauIndices % use to exclude late frames from builders of AC; e.g., taus := taus(tauIndices)
@@ -99,6 +100,9 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                 return
             end
             g = 4;
+        end
+        function g    = get.proximityTable(this)
+            g = this.proximityTable_;
         end
         function g    = get.scannerKit(this)
             g = this.scannerKit_;
@@ -425,21 +429,22 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         
-        %%
+        %%        
         
-        function [prj,ses,ordinal] = findProximalExperiment(this, ordinal)
-            %% FINDPROXIMALEXPERIMENT finds alternative, temporally proximal session information that is separated by the
-            %  requested ordinality.
-            %  @param sesd0 is an mlpipeline.ISessionData.
-            %  @param ordinal is numeric, specifying the separation.
-            %  @return prj is a project name (char).
-            %  @return ses is a session name (char).
+        function this = buildProximityTable(this)
+            %% FINDPROXIMALBY 
+            %  @return this.proximityTable is the constructed table of this session data and sorted, proximal session data.
+            %          The first row describes this session.
+            %          It has columns:  separation (duration), datetimes, projects (char), sessions (char).
+            %  E.g.,   adatetime = T{row, 2}; adatetime{1}
+            %          aproject  = T{row, 3}; aproject{1}
+            %          asession  = T{row, 4}; asession{1}
             
             dt0 = datetime(this);
             J = this.studyData.subjectsJson;
-            dts = [];
-            prjs = {};
-            sess = {};
+            datetimes = [];
+            projects = {};
+            sessions = {};
             
             % traverse, e.g., J.HYGLY50
             for sid = asrow(fields(J))
@@ -452,9 +457,9 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                     [~,remain] = strtok(experiment1, 'E');
                     ses1 = ['ses-' remain];                    
                     dt1 = datetime(J.(sid1).dates.(experiment1), 'InputFormat', 'yyyyMMdd', 'TimeZone', dt0.TimeZone);
-                    dts = [dts; dt1]; %#ok<AGROW>
-                    prjs = [prjs; prj1]; %#ok<AGROW>
-                    sess = [sess; ses1]; %#ok<AGROW>
+                    datetimes = [datetimes; dt1]; %#ok<AGROW>
+                    projects = [projects; prj1]; %#ok<AGROW>
+                    sessions = [sessions; ses1]; %#ok<AGROW>
                 end
 
                 % traverse. e.g., J.HYGLY50.aliases.NP995_25
@@ -469,83 +474,77 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                             [~,remain] = strtok(aliasExperiment1, 'E');
                             ses1 = ['ses-' remain];
                             dt1 = datetime(J.(sid1).aliases.(alias1).dates.(aliasExperiment1), 'InputFormat', 'yyyyMMdd', 'TimeZone', dt0.TimeZone);
-                            dts = [dts; dt1]; %#ok<AGROW>
-                            prjs = [prjs; prj1]; %#ok<AGROW>
-                            sess = [sess; ses1]; %#ok<AGROW>
+                            datetimes = [datetimes; dt1]; %#ok<AGROW>
+                            projects = [projects; prj1]; %#ok<AGROW>
+                            sessions = [sessions; ses1]; %#ok<AGROW>
                         end
                     end
                 end
             end
             
             % sort and select ordinal separated 
-            dtsep = abs(dts - dt0);
-            T = table(dtsep, prjs, sess);
+            separation = abs(datetimes - dt0);
+            T = table(separation, datetimes, projects, sessions);
             T = sortrows(T, 1);
-            
-            % dtsep can have ties
-            for ities = 1:10
-                prj = T{1+ordinal, 2}; prj = prj{1};
-                ses = T{1+ordinal, 3}; ses = ses{1};
-                if ~strcmp(this.sessionFolder, ses)
-                    break
-                end
-                ordinal = ordinal + 1;
-            end
+            this.proximityTable_ = T;
         end
-        function [sesd,ordinal] = findProximalSession(this, varargin)
-            %% FINDPROXIMALSESSION finds alternative, temporally proximal session data that is separated by the
-            %  requested ordinality.  Ordinality increases recursively until valid session data is found.
-            %  @param required sesd0 is an mlpipeline.ISessionData.
-            %  @param optional ordinal is numeric, specifying the separation.  Default := 1.
-            %  @return ordinal that successed.
+        function sesd = findProximal(this, offset, varargin)
+            %  @param offset is separation from this session.
+            %  @param tracerOrdinal:  -1 selects last of tracer, 1 selects first, 2 selects second.
             
             ip = inputParser;
-            addOptional(ip, 'ordinal', 1, @isnumeric)
+            addParameter(ip, 'tracerOrdinal', -1, @isnumeric)
             parse(ip, varargin{:})
             ipr = ip.Results;
-            ordinal = ipr.ordinal;
             
-            home = getenv('SINGULARITY_HOME');
-            for itra = 1:10
-                [prj,ses,ordinal] =this.findProximalExperiment(ordinal);
-                tra = globFoldersT(fullfile(home, prj, ses, 'FDG_DT*-Converted-AC'));
-                if ~isempty(tra) % some ses do not have FDG
-                    break
-                end
-                ordinal = ordinal + 1;
+            if isempty(this.proximityTable)
+                this = this.buildProximityTable();
             end
-            try
+            T = this.proximityTable;
+            prj = T{1+offset, 3}; prj = prj{1};
+            ses = T{1+offset, 4}; ses = ses{1};
+            if strcmp(ses, this.sessionFolder) % avoid table degeneracies in HH:MM:SS
+                sesd = this.findProximal(offset+1, varargin{:});
+                return
+            end
+            tra = globFoldersT(fullfile(getenv('SINGULARITY_HOME'), prj, ses, [upper(this.tracer) '_DT*-Converted-AC']));
+            if isempty(tra)
+                sesd = this;
+                return
+            end
+            if ipr.tracerOrdinal < 0
                 sesd = this.create(fullfile(prj, ses, basename(tra{end})));
-            catch ME
-                handwarning(ME, ...
-                    'mlnipet:RuntimeWarning', ...
-                    'SessionData.findProximalSession:  recursing with ordinal->%g', ordinal+1)
-                [sesd,ordinal] = this.findProximalSession(ordinal+1);
-            end            
+            else                
+                sesd = this.create(fullfile(prj, ses, basename(tra{ipr.tracerOrdinal})));
+            end
         end
-        function [sesd1,ordinal] = findProximalSession2(this, varargin)
-            %% FINDPROXIMALSESSION2finds alternative, temporally increasing session data that is separated by the
-            %  requested ordinality.  Ordinality increases recursively until valid session data is found.
-            %  @param optional ordinal is numeric, specifying the separation.  Default := 1.
-            %  @return sesd is an alternative mlpipeline.ISessionData that is temporally proximal.
-            %  @return ordinal that successed.
+        function sesd = findConsecutive(this, offset, varargin)
+            %  @param offset is separation from this session.
+            %  @param tracerOrdinal:  -1 selects last of tracer, 1 selects first, 2 selects second
             
             ip = inputParser;
-            addOptional(ip, 'ordinal', 1, @isnumeric)
-            addParameter(ip, 'earliestDatetime', mlraichle.StudyRegistry.instance.earliestCalibrationDatetime, @isdatetime)
-            parse(ip, varargin{:})
+            addParameter(ip, 'tracerOrdinal', -1, @isnumeric)
+            parse(ip, varargin)
             ipr = ip.Results;
-            ordinal = ipr.ordinal;
-
-            sesd1 = this;
-            for itries = 1:100
-                datetime1 = sesd1.datetime;
-                [sesd1,ordinal] = this.findProximalSession(sesd1, ordinal);
-                % older rad meas may be incomplete
-                if sesd1.datetime > datetime1 && sesd1.datetime > ipr.earliestDatetime
-                    break
-                end
-                ordinal = ordinal + 1;
+            
+            if isempty(this.proximityTable)
+                this = this.buildProximityTable();
+            end
+            T = this.proximityTable;
+            dt0 = this.datetime; dt0.Hour = 0; dt0.Minute = 0; dt0.Second = 0;
+            T = T(T.datetimes > dt0);
+            T = sortrows(T, 2);            
+            prj = T{1+offset, 3}; prj = prj{1};
+            ses = T{1+offset, 4}; ses = ses{1};
+            if strcmp(ses, this.sessionFolder) % avoid table degeneracies in HH:MM:SS
+                sesd = this.finConsecutive(offset+1, varargin{:});
+                return
+            end
+            tra = globFoldersT(fullfile(getenv('SINGULARITY_HOME'), prj, ses, [upper(this.tracer) '_DT*-Converted-AC']));
+            if ipr.tracerOrdinal < 0
+                sesd = this.create(fullfile(prj, ses, basename(tra{end})));
+            else                
+                sesd = this.create(fullfile(prj, ses, basename(tra{ipr.tracerOrdinal})));
             end
         end
         function g    = getScanFolder(this)
@@ -666,6 +665,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
     properties (Access = protected)
         absScatterCorrected_
         attenuationCorrected_
+        proximityTable_
         scannerKit_
         tracer_
     end
