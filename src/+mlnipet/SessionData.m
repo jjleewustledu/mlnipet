@@ -517,6 +517,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             else                
                 sesd = this.create(fullfile(prj, ses, basename(tra{ipr.tracerOrdinal})));
             end
+            sesd.proximityTable_ = T;
         end
         function sesd = findConsecutive(this, offset, varargin)
             %  @param offset is separation from this session.
@@ -537,7 +538,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             prj = T{1+offset, 3}; prj = prj{1};
             ses = T{1+offset, 4}; ses = ses{1};
             if strcmp(ses, this.sessionFolder) % avoid table degeneracies in HH:MM:SS
-                sesd = this.finConsecutive(offset+1, varargin{:});
+                sesd = this.findConsecutive(offset+1, varargin{:});
                 return
             end
             tra = globFoldersT(fullfile(getenv('SINGULARITY_HOME'), prj, ses, [upper(this.tracer) '_DT*-Converted-AC']));
@@ -546,6 +547,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             else                
                 sesd = this.create(fullfile(prj, ses, basename(tra{ipr.tracerOrdinal})));
             end
+            sesd.proximityTable_ = T;
         end
         function g    = getScanFolder(this)
             if (~isempty(this.scanFolder_))
