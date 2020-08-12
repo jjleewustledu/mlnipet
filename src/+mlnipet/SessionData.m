@@ -682,8 +682,8 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                 this.attenuationCorrected_ = true;
                 return
             end
-        end        
-        function g    = alternativeTaus(this)
+        end    
+        function g = alternativeTaus(this)
             %% see also t0_and_dt()
             
             if (~this.attenuationCorrected)
@@ -721,7 +721,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             if (this.tauMultiplier > 1)
                 g = this.multiplyTau(g);
             end
-        end
+        end    
         function tau1 = multiplyTau(this, tau)
             %% MULTIPLYTAU increases tau durations by scalar this.tauMultiplier, decreasing the sampling rate,
             %  decreasing the number of frames for dynamic data and
