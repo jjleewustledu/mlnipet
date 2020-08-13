@@ -458,7 +458,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             %          asession  = T{row, 4}; asession{1}
             
             dt0 = datetime(this);
-            J = this.studyData.subjectsJson;
+            J = this.registry.subjectsJson;
             datetimes = [];
             projects = {};
             sessions = {};
