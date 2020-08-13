@@ -11,6 +11,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         atlVoxelSize
         attenuationCorrected   
         builder
+        dataAugmentationTags
         indicesLogical     
         isotope
         itr
@@ -22,7 +23,8 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         tracer 		
     end
     
-    methods (Static)        
+    properties
+        dataAugmentation
     end
 
 	methods 
@@ -68,6 +70,21 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         function this = set.builder(this, s)
             assert(isa(s, 'mlpipeline.IBuilder'));
             this.builder_ = s;
+        end
+        function g    = get.dataAugmentationTags(this)
+            g = '';
+            if ~isempty(this.dataAugmentation)
+                for f = fields(this.dataAugmentation)
+                    val = this.dataAugmentation.(f{1});
+                    if ischar(val)
+                        g = [g '_' f{1} upper(val(1)) val(2:end)]; %#ok<AGROW>
+                    end
+                    if isnumeric(val)
+                        g = [g '_' f{1} strrep(num2str(val), '.', 'p')];
+                    end
+                end
+                return
+            end
         end
         function g    = get.indicesLogical(this) %#ok<MANU>
             g = true;
@@ -632,9 +649,10 @@ classdef SessionData < mlpipeline.ResolvingSessionData
  			%% SESSIONDATA
  			%  @param [param-name, param-value[, ...]]
             %
-            %         'abs'          is logical
-            %         'ac'           is logical
-            %         'tracer'       is char
+            %         'abs'               is logical
+            %         'ac'                is logical
+            %         'tracer'            is char
+            %          'dataAugmentation' is struct
 
  			this = this@mlpipeline.ResolvingSessionData(varargin{:});
             
@@ -644,6 +662,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             addParameter(ip, 'ac', false, @islogical);
             addParameter(ip, 'scannerKit', 'mlsiemens.BiographMMRKit', @ischar)
             addParameter(ip, 'tracer', '', @ischar);
+            addParameter(ip, 'dataAugmentation', []);
             parse(ip, varargin{:}); 
             ipr = ip.Results;
 
@@ -659,6 +678,10 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                 j = jsondecode(fileread(this.jsonFilename));
                 this.taus_ = j.taus';
             end
+            
+            %% data augmentation for machine learning
+            
+            this.dataAugmentation = ipr.dataAugmentation;
  		end
     end
     
