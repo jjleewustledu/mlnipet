@@ -80,7 +80,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                         g = [g '_' f{1} upper(val(1)) val(2:end)]; %#ok<AGROW>
                     end
                     if isnumeric(val)
-                        g = [g '_' f{1} strrep(num2str(val), '.', 'p')];
+                        g = [g '_' f{1} strrep(num2str(val), '.', 'p')]; %#ok<AGROW>
                     end
                 end
                 return

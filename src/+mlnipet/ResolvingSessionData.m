@@ -26,7 +26,7 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
     
     methods (Static)
         function jitOn222(varargin)
-            %% quickly registers on TRIO_Y_NDC_222
+            %% quickly registers on TRIO_Y_NDC_222, reusing existing images.            
             %  @param fexp is char, e.g., 'subjects/sub-S58163/resampling_restricted/brain_222.4dfp.hdr'
             %                       e.g., '/scratch/jjlee/Singularity/subjects/sub-S58163/resampling_restricted/fdgdt*_222.4dfp.hdr'
             %  @param options is char, default := '-O222'
