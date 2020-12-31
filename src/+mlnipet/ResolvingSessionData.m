@@ -18,6 +18,7 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
         doseAdminDatetimeTag
         fractionalImageFrameThresh % of median dynamic image-frame intensities
         lmTag
+        petPointSpreadTag
         referenceTracer        
         ReferenceTracer
         t4ResolveBuilderBlurArg
@@ -127,6 +128,9 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
                 return
             end
             g = 'NAC';
+        end
+        function g    = get.petPointSpreadTag(this)
+            g = this.petPointSpreadSuffix();
         end
         function g    = get.compositeT4ResolveBuilderBlurArg(this)
             if (~this.attenuationCorrected)

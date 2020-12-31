@@ -25,6 +25,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
     
     properties
         dataAugmentation
+        scanIndex = 1
     end
 
 	methods 
@@ -175,7 +176,11 @@ classdef SessionData < mlpipeline.ResolvingSessionData
 
             fqfn = fullfile(this.fourdfpLocation, ...
                             sprintf('%s%s%s', ip.Results.desc, ip.Results.tag, this.filetypeExt));
-            fqfn = this.ensureOrientation(fqfn, ip.Results.orientation);
+            try
+                fqfn = this.ensureOrientation(fqfn, ip.Results.orientation);
+            catch ME
+                handwarning(ME)
+            end
             obj  = imagingType(ip.Results.typ, fqfn);
         end
         function obj  = studyAtlas(this, varargin)
@@ -258,8 +263,11 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                             sprintf('%s%s%s', ip.Results.desc, ip.Results.tag, this.filetypeExt));
             obj = imagingType(ip.Results.typ, fqfn);
         end
-        function dt   = datetime(this)
+        function dt   = datetime(this, varargin)
             dt = mlpet.DirToolTracer.folder2datetime(this.scanFolder);
+            if ~isempty(varargin)
+                dt = datetime(char(dt), varargin{:});
+            end
         end
         function obj  = fdg(this, varargin)
             this.tracer = 'FDG';
@@ -593,7 +601,16 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                 'tracer', fullfile(this.sessionPath, this.tracer_), ...
                 'ac', this.attenuationCorrected_);            
             assert(~isempty(dtt.dns));
-            g = dtt.dns{1};
+            try
+                g = dtt.dns{this.scanIndex};
+            catch ME
+                if length(dtt.dns) < this.scanIndex
+                    error('mlnipet:ValueError', ...
+                        'SessionData.getScanFolder().this.scanIndex->%s', mat2str(this.scanIndex))
+                else
+                    rethrow(ME)
+                end
+            end
         end
         function g    = getStudyCensus(this) %#ok<MANU>
             g = [];
@@ -651,6 +668,8 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             %
             %         'abs'               is logical
             %         'ac'                is logical
+            %         'scanIndex'         is numeric
+            %         'scannerKit'        is char
             %         'tracer'            is char
             %          'dataAugmentation' is struct
 
@@ -660,6 +679,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             ip.KeepUnmatched = true;
             addParameter(ip, 'abs', false, @islogical);
             addParameter(ip, 'ac', false, @islogical);
+            addParameter(ip, 'scanIndex', 1, @isnumeric)
             addParameter(ip, 'scannerKit', 'mlsiemens.BiographMMRKit', @ischar)
             addParameter(ip, 'tracer', '', @ischar);
             addParameter(ip, 'dataAugmentation', []);
@@ -668,6 +688,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
 
             this.absScatterCorrected_ = ipr.abs;
             this.attenuationCorrected_ = ipr.ac;
+            this.scanIndex = ipr.scanIndex;
             this.scannerKit_ = ipr.scannerKit;
             this.tracer_ = ipr.tracer;
             this = this.adjustAttenuationCorrectedFromScanFolder;
