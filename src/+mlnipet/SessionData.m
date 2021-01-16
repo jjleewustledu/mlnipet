@@ -12,6 +12,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         attenuationCorrected   
         builder
         dataAugmentationTags
+        dataPath
         indicesLogical     
         isotope
         itr
@@ -25,6 +26,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
     
     properties
         dataAugmentation
+        dataFolder
         scanIndex = 1
     end
 
@@ -86,6 +88,9 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                 end
                 return
             end
+        end
+        function g    = get.dataPath(this)
+            g = fullfile(this.subjectPath, this.dataFolder, '');
         end
         function g    = get.indicesLogical(this) %#ok<MANU>
             g = true;
@@ -605,7 +610,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                 g = dtt.dns{this.scanIndex};
             catch ME
                 if length(dtt.dns) < this.scanIndex
-                    error('mlnipet:ValueError', ...
+                    error('mlnipet:ValueError:getScanFolder', ...
                         'SessionData.getScanFolder().this.scanIndex->%s', mat2str(this.scanIndex))
                 else
                     rethrow(ME)
@@ -679,6 +684,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             ip.KeepUnmatched = true;
             addParameter(ip, 'abs', false, @islogical);
             addParameter(ip, 'ac', false, @islogical);
+            addParameter(ip, 'dataFolder', 'resampling_restricted', @ischar)
             addParameter(ip, 'scanIndex', 1, @isnumeric)
             addParameter(ip, 'scannerKit', 'mlsiemens.BiographMMRKit', @ischar)
             addParameter(ip, 'tracer', '', @ischar);
@@ -688,6 +694,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
 
             this.absScatterCorrected_ = ipr.abs;
             this.attenuationCorrected_ = ipr.ac;
+            this.dataFolder = ipr.dataFolder;
             this.scanIndex = ipr.scanIndex;
             this.scannerKit_ = ipr.scannerKit;
             this.tracer_ = ipr.tracer;
