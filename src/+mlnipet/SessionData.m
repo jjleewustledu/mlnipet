@@ -461,6 +461,45 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         
         %%        
         
+        function g    = alternativeTaus(this)
+            %% see also t0_and_dt()
+            
+            if (~this.attenuationCorrected)
+                switch (upper(this.tracer))
+                    case 'FDG'
+                        g = [30,35,39,43,47,51,55,59,64,68,72,76,81,85,89,93,98,102,106,111,115,120,124,129,133,138,142,147,151,156,161,165,170,175,171];
+                        % length == 35, nudge = 4, dur == 3601
+                    case {'OC' 'CO' 'OO' 'HO'}
+                        g = [12,13,14,15,17,18,20,23,26,30,35,43,55,75,114,91];
+                        % length == 16, dur = 601
+                    otherwise
+                        error('mlnipet:IndexError', 'NAC:SessionData.alternativeTaus.this.tracer->%s', this.tracer);
+                end
+            else            
+                switch (upper(this.tracer))
+                    case 'FDG'
+                        g = [10,13,14,16,17,19,20,22,23,25,26,28,29,31,32,34,35,37,38,40,41,43,44,46,47,49,50,52,53,56,57,59,60,62,63,65,66,68,69,71,72,74,76,78,79,81,82,84,85,87,88,91,92,94,95,97,98,100,101,104,105,108];
+                        % length == 62, nudge = 1.5, dur == 3601
+                    case 'HO'
+                        g = [3,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,6,6,6,6,6,6,7,7,7,7,8,8,8,9,9,10,10,11,11,12,13,14,15,16,18,20,22,25,29,34,41,51,52];
+                        % length == 54, dur == 601
+                    case {'OC' 'CO'}
+                        g = [3,3,3,3,3,3,3,3,5,5,5,5,6,6,6,6,6,7,7,7,7,8,8,8,9,9,10,10,11,11,12,13,14,15,16,18,19,22,24,28,33,39,49,64,49];
+                        % length == 45, dur == 601
+                    case 'OO'
+                        g = [2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,6,6,6,6,6,7,7,7,7,8,8,8,9,9,10,10,15];
+                        % length == 63, dur == 301
+                    otherwise
+                        error('mlnipet:IndexError', 'AC:SessionData.alternativeTaus.this.tracer->%s', this.tracer);
+                end
+            end
+            if (~isempty(this.tauIndices))
+                g = g(this.tauIndices);
+            end
+            if (this.tauMultiplier > 1)
+                g = this.multiplyTau(g);
+            end
+        end  
         function this = buildProximityTable(this)
             %% FINDPROXIMALBY 
             %  @return this.proximityTable is the constructed table of this session data and sorted, proximal session data.
@@ -733,46 +772,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                 this.attenuationCorrected_ = true;
                 return
             end
-        end    
-        function g = alternativeTaus(this)
-            %% see also t0_and_dt()
-            
-            if (~this.attenuationCorrected)
-                switch (upper(this.tracer))
-                    case 'FDG'
-                        g = [30,35,39,43,47,51,55,59,64,68,72,76,81,85,89,93,98,102,106,111,115,120,124,129,133,138,142,147,151,156,161,165,170,175,171];
-                        % length == 35, nudge = 4, dur == 3601
-                    case {'OC' 'CO' 'OO' 'HO'}
-                        g = [12,13,14,15,17,18,20,23,26,30,35,43,55,75,114,91];
-                        % length == 16, dur = 601
-                    otherwise
-                        error('mlnipet:IndexError', 'NAC:SessionData.alternativeTaus.this.tracer->%s', this.tracer);
-                end
-            else            
-                switch (upper(this.tracer))
-                    case 'FDG'
-                        g = [10,13,14,16,17,19,20,22,23,25,26,28,29,31,32,34,35,37,38,40,41,43,44,46,47,49,50,52,53,56,57,59,60,62,63,65,66,68,69,71,72,74,76,78,79,81,82,84,85,87,88,91,92,94,95,97,98,100,101,104,105,108];
-                        % length == 62, nudge = 1.5, dur == 3601
-                    case 'HO'
-                        g = [3,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,6,6,6,6,6,6,7,7,7,7,8,8,8,9,9,10,10,11,11,12,13,14,15,16,18,20,22,25,29,34,41,51,52];
-                        % length == 54, dur == 601
-                    case {'OC' 'CO'}
-                        g = [3,3,3,3,3,3,3,3,5,5,5,5,6,6,6,6,6,7,7,7,7,8,8,8,9,9,10,10,11,11,12,13,14,15,16,18,19,22,24,28,33,39,49,64,49];
-                        % length == 45, dur == 601
-                    case 'OO'
-                        g = [2,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,6,6,6,6,6,7,7,7,7,8,8,8,9,9,10,10,15];
-                        % length == 63, dur == 301
-                    otherwise
-                        error('mlnipet:IndexError', 'AC:SessionData.alternativeTaus.this.tracer->%s', this.tracer);
-                end
-            end
-            if (~isempty(this.tauIndices))
-                g = g(this.tauIndices);
-            end
-            if (this.tauMultiplier > 1)
-                g = this.multiplyTau(g);
-            end
-        end    
+        end      
         function tau1 = multiplyTau(this, tau)
             %% MULTIPLYTAU increases tau durations by scalar this.tauMultiplier, decreasing the sampling rate,
             %  decreasing the number of frames for dynamic data and
