@@ -648,7 +648,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             try
                 g = dtt.dns{this.scanIndex};
             catch ME
-                if length(dtt.dns) < this.scanIndex
+                if length(dtt.dns) < this.scanIndex 
                     error('mlnipet:ValueError:getScanFolder', ...
                         'SessionData.getScanFolder().this.scanIndex->%s', mat2str(this.scanIndex))
                 else
