@@ -147,10 +147,15 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             g = ['Converted-' this.attenuationTag];
         end
         function g    = get.doseAdminDatetimeTag(this)
-            re = regexp(this.scanFolder, '\w+_(?<dttag>DT\d+).\d+\w*', 'names');
-            g = re.dttag;
-            if (isempty(g))
-                g = '';
+            try
+                re = regexp(this.scanFolder, '\w+_(?<dttag>DT\d+).\d+\w*', 'names');
+                g = re.dttag;
+                if (isempty(g))
+                    g = '';
+                end
+            catch ME
+                handwarning(ME)
+                g = NaT;
             end
         end
         function g    = get.fractionalImageFrameThresh(this)
