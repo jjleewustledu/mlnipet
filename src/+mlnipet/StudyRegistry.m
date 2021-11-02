@@ -33,6 +33,7 @@ classdef (Abstract) StudyRegistry < handle & mlpet.StudyRegistry
         %% GET
         
         function g = get.earliestCalibrationDatetime(~)
+            %g = datetime(2015,1,1, 'TimeZone', 'America/Chicago'); % accomodates sub-S33789
             g = datetime(2016,7,19, 'TimeZone', 'America/Chicago');
         end
         function g = get.fslroiArgs(~)
