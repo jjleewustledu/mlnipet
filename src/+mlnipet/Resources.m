@@ -9,9 +9,12 @@ classdef Resources < handle & mlpatterns.Singleton
  	%% It was developed on Matlab 8.5.0.197613 (R2015a) for MACI64.
  	
     properties (Constant)
+        CCIR_RAD_MEASUREMENTS_DIR = getenv('CCIR_RAD_MEASUREMENTS_DIR')
         FLIP1 = true % bug at interface with NIPET
         PREFERRED_TIMEZONE = 'America/Chicago'
-        CCIR_RAD_MEASUREMENTS_DIR = fullfile(getenv('HOME'), 'Documents', 'private', '')
+        PROJECTS_DIR = getenv('PROJECTS_DIR')
+        SINGULARITY_HOME = getenv('SINGULARITY_HOME')
+        SUBJECTS_DIR = getenv('SUBJECTS_DIR')
     end
     
     
