@@ -26,6 +26,90 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
     end
     
     methods (Static)
+        function jitOn111(varargin)
+            %% quickly registers on TRIO_Y_NDC_111, reusing existing images.            
+            %  @param fexp is char, e.g., 'subjects/sub-S58163/resampling_restricted/brain_111.4dfp.hdr'
+            %                       e.g., '/scratch/jjlee/Singularity/subjects/sub-S58163/resampling_restricted/fdgdt*_111.4dfp.hdr'
+            %  @param options is char, default := '-O222'
+            
+            ip = inputParser;
+            addRequired(ip, 'fexp', @ischar)
+            addOptional(ip, 'options', '-O111', @ischar)
+            parse(ip, varargin{:})
+            ipr = ip.Results;
+            
+            if ~lstrfind(ipr.fexp, '_111')
+                return
+            end 
+            if ~lstrfind(ipr.fexp, getenv('SINGULARITY_HOME'))
+                assert(strncmp(ipr.fexp, 'subjects', 8))
+                ipr.fexp = [getenv('SINGULARITY_HOME') ipr.fexp];
+            end
+            fv = mlfourdfp.FourdfpVisitor();
+            for globFolder = globT(myfileparts(ipr.fexp))
+                pwd0 = pushd(globFolder{1});
+                pwdt4 = myfileparts(globFolder{1});
+                ss = strsplit(basename(ipr.fexp), '_111.4dfp');
+                fexpNoAtl = [ss{1} '.4dfp.hdr'];            
+                for globNoAtl = globT(fexpNoAtl)
+                    if regexp(globNoAtl{1}, '[a-z]{4,5}\d{8,14}\.4dfp\.hdr', 'once')
+                        fpNoAtl = myfileprefix(globNoAtl{1});
+                        fpOnAtl = [mybasename(fpNoAtl) '_111'];
+                        if ~isfile([fpOnAtl '.4dfp.hdr'])
+                            t4Atl = fullfile(pwdt4, 'T1001_to_TRIO_Y_NDC_t4');
+                            assert(isfile(t4Atl))
+                            t4Tracer = [fpNoAtl '_to_T1001_t4'];
+                            assert(isfile(t4Tracer))
+                            t4 = [fpNoAtl '_to_TRIO_Y_NDC_t4'];
+                            if ~isfile(t4)
+                                fv.t4_mul(t4Tracer, t4Atl, t4)
+                            end
+                            fv.t4img_4dfp(t4, fpNoAtl, 'out', [fpNoAtl '_111'], 'options', ipr.options)
+                        end
+                        continue
+                    end
+                    if regexp(globNoAtl{1}, '[a-z]{4,5}\d{8,14}_avgt\.4dfp\.hdr', 'once')
+                        fpNoAtl = myfileprefix(globNoAtl{1});
+                        fpOnAtl = [mybasename(fpNoAtl) '_111'];
+                        if ~isfile([fpOnAtl '.4dfp.hdr'])
+                            t4Atl = fullfile(pwdt4, 'T1001_to_TRIO_Y_NDC_t4');
+                            assert(isfile(t4Atl))
+                            fpNoAtlStem = strsplit(fpNoAtl, '_');
+                            fpNoAtlStem = fpNoAtlStem{1};
+                            t4Tracer = [fpNoAtlStem '_to_T1001_t4'];
+                            assert(isfile(t4Tracer))
+                            t4 = [fpNoAtl '_to_TRIO_Y_NDC_t4'];
+                            if ~isfile(t4)
+                                fv.t4_mul(t4Tracer, t4Atl, t4)
+                            end
+                            fv.t4img_4dfp(t4, fpNoAtl, 'out', [fpNoAtl '_111'], 'options', ipr.options)
+                        end
+                        continue
+                    end
+                    if lstrfind(globNoAtl, 'brain') 
+                        fpNoAtl = myfileprefix(globNoAtl{1});
+                        fpOnAtl = [mybasename(fpNoAtl) '_111'];
+                        if ~isfile([fpOnAtl '.4dfp.hdr'])
+                            t4Atl = fullfile(pwdt4, 'T1001_to_TRIO_Y_NDC_t4');
+                            assert(isfile(t4Atl))
+                            fv.t4img_4dfp(t4Atl, fpNoAtl, 'out', [fpNoAtl '_111'], 'options', ipr.options)
+                        end                        
+                        continue
+                    end
+                    if lstrfind(globNoAtl, 'parc')
+                        fpNoAtl = myfileprefix(globNoAtl{1});
+                        fpOnAtl = [mybasename(fpNoAtl) '_111'];
+                        if ~isfile([fpOnAtl '.4dfp.hdr'])
+                            t4Atl = fullfile(pwdt4, 'T1001_to_TRIO_Y_NDC_t4');
+                            assert(isfile(t4Atl))
+                            fv.t4img_4dfp(t4Atl, fpNoAtl, 'out', [fpNoAtl '_111'], 'options', ['-n ' ipr.options])
+                        end                        
+                        continue
+                    end
+                end
+                popd(pwd0) 
+            end
+        end   
         function jitOn222(varargin)
             %% quickly registers on TRIO_Y_NDC_222, reusing existing images.            
             %  @param fexp is char, e.g., 'subjects/sub-S58163/resampling_restricted/brain_222.4dfp.hdr'
