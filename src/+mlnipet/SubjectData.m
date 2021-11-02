@@ -19,7 +19,8 @@ classdef SubjectData < mlpipeline.SubjectData
  	%% It was developed on Matlab 9.5.0.1067069 (R2018b) Update 4 for MACI64.  Copyright 2019 John Joowon Lee.
  	
     properties (Constant)
-        SURFER_OBJECTS = {'aparcA2009sAseg' 'aparcAseg' 'brain' 'brainmask' 'wmparc' 'T1001'}
+        SURFER_OBJECTS = {'aparcA2009sAseg' 'aparcAseg' 'brain' 'brainmask' 'wmparc' 'wmparc1' 'T1001'}
+        % wmparc1 == 1 denotes CSF
     end
     
 	properties (Dependent)
