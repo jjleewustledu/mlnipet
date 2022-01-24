@@ -23,7 +23,7 @@ classdef StudyData < handle & mlpipeline.StudyData
             g = '.dcm';
         end
         function d = get.freesurfersDir(~)
-            d = fullfile(getenv('PPG'), 'freesurfer', '');
+            error('mlnipet:StudyData', '')
         end
         function d = get.rawdataDir(this)
             d = this.registry_.rawdataDir;

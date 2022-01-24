@@ -18,7 +18,6 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
         doseAdminDatetimeTag
         fractionalImageFrameThresh % of median dynamic image-frame intensities
         lmTag
-        petPointSpreadTag
         referenceTracer        
         ReferenceTracer
         t4ResolveBuilderBlurArg
@@ -213,9 +212,6 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             end
             g = 'NAC';
         end
-        function g    = get.petPointSpreadTag(this)
-            g = this.petPointSpreadSuffix();
-        end
         function g    = get.compositeT4ResolveBuilderBlurArg(this)
             if (~this.attenuationCorrected)
                 g = this.umapBlurArg;
@@ -313,9 +309,6 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
         function p    = petPointSpread(~, varargin)
             inst = mlsiemens.MMRRegistry.instance;
             p    = inst.petPointSpread(varargin{:});
-        end
-        function suff = petPointSpreadSuffix(this, varargin)
-            suff = sprintf('_b%i', floor(10*mean(this.petPointSpread(varargin{:}))));
         end
         function [dt0_,date_] = readDatetime0(this)
             %% reads study date, study time from this.tracerListmodeDcm
@@ -470,10 +463,11 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function obj  = umapSynth(this, varargin)
+            tag = this.petPointSpread('imgblur_4dfp', true);
             ip = inputParser;
             ip.KeepUnmatched = true;
             addParameter(ip, 'tracer', this.tracer, @ischar);
-            addParameter(ip, 'blurTag', mlnipet.ResourcesRegistry.instance().suffixPetPointSpread, @ischar);
+            addParameter(ip, 'blurTag', tag, @ischar);
             parse(ip, varargin{:});
             tr = ip.Results.tracer;
             

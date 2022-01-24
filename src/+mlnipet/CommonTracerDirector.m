@@ -120,12 +120,10 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             this = this.instanceCleanResolved;
         end
         function ic2  = flipKLUDGE____(ic2)
-            if (mlnipet.ResourcesRegistry.instance().FLIP1)
-                assert(isa(ic2, 'mlfourd.ImagingContext2'), 'mlnipet:TypeError', 'TracerDirector2.flipKLUDGE____');
-                warning('mlnipet:RuntimeWarning', 'KLUDGE:TracerDirector2.flipKLUDGE____ is active');
-                ic2 = ic2.flip(1);
-                ic2.ensureSingle;
-            end
+            assert(isa(ic2, 'mlfourd.ImagingContext2'), 'mlnipet:TypeError', 'TracerDirector2.flipKLUDGE____');
+            warning('mlnipet:RuntimeWarning', 'KLUDGE:TracerDirector2.flipKLUDGE____ is active');
+            ic2 = ic2.flip(1);
+            ic2.ensureSingle;
         end
         function umap = getOOMirrorForTracer(sessd)
             import mlnipet.CommonTracerDirector.*

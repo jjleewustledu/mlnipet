@@ -8,6 +8,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
  	
 	properties (Constant)
         NIPET_PREFIX = 'a' %'1.3.12.2'
+        FSL_ROI_ARGS = '86 172 86 172 0 -1'
     end
     
     properties (Dependent)
@@ -126,9 +127,6 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
             popd(pwd0);
         end
         function fn   = crop(this, FN)
-            
-            res = mlnipet.ResourcesRegistry.instance();
-            
             try
                 % recursion
                 if (iscell(FN))
@@ -147,7 +145,7 @@ classdef NipetBuilder < mlpipeline.AbstractBuilder
                 fn = fullfile(pth, [lower(fp) x]);
                 if (~strcmp(fn, FN))
                     pwd0 = pushd(myfileparts(FN));
-                    mlbash(sprintf('fslroi %s %s %s', FN, fn, res.fslroiArgs));
+                    mlbash(sprintf('fslroi %s %s %s', FN, fn, this.FSL_ROI_ARGS));
                     popd(pwd0);
                 end
             catch ME

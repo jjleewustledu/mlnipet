@@ -1,4 +1,4 @@
-classdef (Sealed) ResourcesRegistry < handle & mlpatterns.Singleton2
+classdef (Sealed) NipetRegistry < handle & mlpatterns.Singleton2
 	%% RESOURCESREGISTRY  
 
 	%  $Revision$
@@ -6,17 +6,9 @@ classdef (Sealed) ResourcesRegistry < handle & mlpatterns.Singleton2
  	%  last modified $LastChangedDate$ and placed into repository /Users/jjlee/MATLAB-Drive/mlnipet/src/+mlnipet.
  	%% It was developed on Matlab 9.5.0.1067069 (R2018b) Update 4 for MACI64.  Copyright 2019 John Joowon Lee.
  	
-	properties 		
-        FLIP1 = true % bug at interface with NIPET
-        fslroiArgs = '86 172 86 172 0 -1'
-        rnumberFinal = 2
-    end
-    
     properties (Dependent)
         noiseFloorOfActivity
-        petPointSpread
-        reconstructionVersion
-        suffixPetPointSpread
+        nipetVersion
     end
     
     methods (Static)
@@ -33,7 +25,7 @@ classdef (Sealed) ResourcesRegistry < handle & mlpatterns.Singleton2
                 uniqueInstance = [];
             end          
             if (isempty(uniqueInstance))
-                this = mlnipet.ResourcesRegistry();
+                this = mlnipet.NipetRegistry();
                 uniqueInstance = this;
             else
                 this = uniqueInstance;
@@ -48,25 +40,22 @@ classdef (Sealed) ResourcesRegistry < handle & mlpatterns.Singleton2
         function g = get.noiseFloorOfActivity(~)
             g = 0; % Bq/mL
         end
-        function g = get.petPointSpread(~)
-            g = mlsiemens.MMRRegistry.instance.petPointSpread;
-        end
-        function g = get.reconstructionVersion(~)
+        function g = get.nipetVersion(~)
             g = sprintf('nipet=1.1');
             %g = sprintf('Siemens e7 E11p');
         end
-        function g = get.suffixPetPointSpread(~)
-            g = mlsiemens.MMRRegistry.instance.petPointSpread('imgblur_4dfp', true);
+
+        %%
+
+        function g = petPointSpread(~, varargin)
+            g = mlsiemens.MMRRegistry.instance.petPointSpread(varargin{:});
         end
     end
 
     %% PRIVATE
     
 	methods	(Access = private)
- 		function this = ResourcesRegistry(varargin)
- 			%% RESOURCESREGISTRY
- 			%  @param .
- 			
+ 		function this = NipetRegistry(varargin)
  		end
  	end 
 
