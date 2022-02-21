@@ -29,7 +29,7 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             %% quickly registers on TRIO_Y_NDC_111, reusing existing images.            
             %  @param fexp is char, e.g., 'subjects/sub-S58163/resampling_restricted/brain_111.4dfp.hdr'
             %                       e.g., '/scratch/jjlee/Singularity/subjects/sub-S58163/resampling_restricted/fdgdt*_111.4dfp.hdr'
-            %  @param options is char, default := '-O222'
+            %  @param options is char, default := '-O111'
             
             ip = inputParser;
             addRequired(ip, 'fexp', @ischar)
@@ -305,6 +305,23 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
                 this.sessionLocation('typ', 'path'), ...
                 sprintf('ctRescaled%s', this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
+        end
+        function jitOnAtlas(this, varargin)
+            atlTag = strrep(this.registry.atlasTag, '_', '');
+            import mlnipet.ResolvingSessionData.*
+            switch lower(atlTag)
+                case '111'
+                    ResolvingSessionData.jitOn111(varargin{:});
+                case '222'
+                    ResolvingSessionData.jitOn222(varargin{:});
+                case {'t1001' 't1w' 'mpr'}
+                    ResolvingSessionData.jitOnT1001(varargin{:});
+                case {'tof' 'angio'}
+                    error('mlnipet:NotImplementedError', 'ResolvingSessionData.jitOnAtlas: atlTag->tof')
+                otherwise
+                    error('mlnipet:ValueError', ...
+                        'ResolvingSessionData.jitOnAtlas did not recognize atlTag->%s', atlTag)
+            end
         end
         function p    = petPointSpread(~, varargin)
             inst = mlsiemens.MMRRegistry.instance;
