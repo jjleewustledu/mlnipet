@@ -8,7 +8,6 @@ classdef SessionData < mlpipeline.ResolvingSessionData
  	
 	properties (Dependent)        
         absScatterCorrected
-        atlasCode
         attenuationCorrected   
         builder
         dataAugmentationTags
@@ -48,10 +47,6 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         function this = set.absScatterCorrected(this, s)
             assert(islogical(s));
             this.absScatterCorrected_ = s;
-        end
-        function g    = get.atlasCode(this)
-            reg = mlnipet.StudyRegistry.instance();
-            g = reg.atlasCode;
         end
         function g    = get.attenuationCorrected(this)
             if (~isempty(this.attenuationCorrected_))
@@ -434,19 +429,19 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         end        
         function obj  = tracerSuvr(this, varargin)
             fqfn = fullfile(this.sessionPath, ...
-                sprintf('%s_suvr_%i%s', this.tracerRevision('typ', 'fp'), this.atlasCode, this.filetypeExt));
+                sprintf('%s_suvr%s%s', this.tracerRevision('typ', 'fp'), this.atlasTag, this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function obj  = tracerSuvrAveraged(this, varargin)   
             ipr = this.iprLocation(varargin{:});         
             fqfn = fullfile(this.sessionPath, ...
-                sprintf('%sa%sr%i_suvr_%i%s', ...
-                lower(ipr.tracer), this.epochTag, ipr.rnumber, this.atlasCode, this.filetypeExt));
+                sprintf('%sa%sr%i_suvr%s%s', ...
+                lower(ipr.tracer), this.epochTag, ipr.rnumber, this.atlasTag, this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function obj  = tracerSuvrNamed(this, name, varargin)
             fqfn = fullfile(this.sessionPath, ...
-                sprintf('%sr%i_suvr_%i%s', lower(name), this.rnumber, this.atlasCode, this.filetypeExt));
+                sprintf('%sr%i_suvr%s%s', lower(name), this.rnumber, this.atlasTag, this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function obj  = tracerTimeWindowed(this, varargin)
@@ -456,7 +451,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         end
         function obj  = tracerTimeWindowedOnAtl(this, varargin)
             fqfn = fullfile(this.sessionPath, ...
-                sprintf('%s_timeWindowed_%i%s', this.tracerRevision('typ', 'fp'), this.atlasCode, this.filetypeExt));
+                sprintf('%s_timeWindowed%s%s', this.tracerRevision('typ', 'fp'), this.atlasTag, this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         

@@ -12,7 +12,6 @@ classdef (Abstract) StudyRegistry < handle & mlpatterns.Singleton2
 
     properties 
         atlasTag = '_111'
-        atlasCode = 111
         comments = ''
         noclobber = true
         numberNodes
