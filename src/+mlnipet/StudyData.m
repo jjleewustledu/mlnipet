@@ -31,7 +31,7 @@ classdef StudyData < handle & mlpipeline.StudyData
         
         %%
         
-        function a    = seriesDicomAsterisk(this, fqdn)
+        function a = seriesDicomAsterisk(this, fqdn)
             assert(isfolder(fqdn));
             assert(isfolder(fullfile(fqdn, 'DICOM')));
             a = fullfile(fqdn, 'DICOM', ['*' this.dicomExtension]);
