@@ -1,4 +1,4 @@
-classdef (Abstract) StudyRegistry < handle & mlpatterns.Singleton2
+classdef (Abstract) StudyRegistry < handle & mlpipeline.IStudyRegistry
 	%% STUDYREGISTRY  
 
 	%  $Revision$
