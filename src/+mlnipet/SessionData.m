@@ -198,7 +198,9 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             if (~lexist(fqfn, 'file') && isfolder(this.freesurferLocation))
                 mic = T1001@mlpipeline.SessionData(this, 'typ', 'mlfourd.ImagingContext2');
                 mic.nifti;
-                mic.saveas(fqfn);
+                tn = tempname;
+                mic.saveas(tn);
+                mlbash(sprintf('fslreorient2std %s %s', tn, fqfn));
             end
             obj = this.fqfilenameObject(fqfn, varargin{:});
         end
