@@ -5,13 +5,17 @@ classdef SessionData < mlpipeline.ResolvingSessionData
  	%  was created 14-Jun-2019 17:09:40 by jjlee,
  	%  last modified $LastChangedDate$ and placed into repository /Users/jjlee/MATLAB-Drive/mlnipet/src/+mlnipet.
  	%% It was developed on Matlab 9.5.0.1067069 (R2018b) Update 4 for MACI64.  Copyright 2019 John Joowon Lee.
- 	
-	properties (Dependent)        
+    
+    properties
+        dataAugmentation
+        scanIndex = 1
+    end
+
+	properties (Dependent)
         absScatterCorrected
         attenuationCorrected   
         builder
         dataAugmentationTags
-        dataPath
         indicesLogical     
         isotope
         itr
@@ -21,12 +25,6 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         tauIndices % use to exclude late frames from builders of AC; e.g., taus := taus(tauIndices)
         tauMultiplier
         tracer 		
-    end
-    
-    properties
-        dataAugmentation
-        dataFolder
-        scanIndex = 1
     end
 
 	methods 
@@ -84,9 +82,6 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                 end
                 return
             end
-        end
-        function g    = get.dataPath(this)
-            g = fullfile(this.subjectPath, this.dataFolder, '');
         end
         function g    = get.indicesLogical(this) %#ok<MANU>
             g = true;
@@ -614,45 +609,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             end
             sesd.proximityTable_ = T;
         end
-        function g    = getScanFolder(this)
-            if (~isempty(this.scanFolder_))
-                g = this.scanFolder_;
-                return
-            end
-            if isempty(this.tracer_) || isempty(this.attenuationCorrected_)
-                g = '';
-                dt = datetime(datestr(now));
-                for globbed = globFoldersT(fullfile(this.sessionPath, '*_DT*.000000-Converted-*'))
-                    base = mybasename(globbed{1});
-                    re = regexp(base, ...
-                        '\S+_DT(?<yyyy>\d{4})(?<mm>\d{2})(?<dd>\d{2})(?<HH>\d{2})(?<MM>\d{2})(?<SS>\d{2})\.\d{6}-Converted\S*', ...
-                        'names');
-                    assert(~isempty(re))
-                    dt1 = datetime(str2double(re.yyyy), str2double(re.mm), str2double(re.dd), ...
-                        str2double(re.HH), str2double(re.MM), str2double(re.SS));
-                    if dt1 < dt
-                        dt = dt1; % find earliest scan
-                        g = base;
-                    end                    
-                end                
-                return
-            end
-            dtt = mlpet.DirToolTracer( ...
-                'tracer', fullfile(this.sessionPath, this.tracer_), ...
-                'ac', this.attenuationCorrected_);            
-            assert(~isempty(dtt.dns));
-            try
-                g = dtt.dns{this.scanIndex};
-            catch ME
-                if length(dtt.dns) < this.scanIndex 
-                    error('mlnipet:ValueError:getScanFolder', ...
-                        'SessionData.getScanFolder().this.scanIndex->%s', mat2str(this.scanIndex))
-                else
-                    rethrow(ME)
-                end
-            end
-        end
-        function g    = getStudyCensus(this) %#ok<MANU>
+        function g    = getStudyCensus(~)
             g = [];
         end
         function [ipr,this] = iprLocation(this, varargin)
@@ -719,7 +676,6 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             ip.KeepUnmatched = true;
             addParameter(ip, 'abs', false, @islogical);
             addParameter(ip, 'ac', false, @islogical);
-            addParameter(ip, 'dataFolder', 'resampling_restricted', @ischar)
             addParameter(ip, 'scanIndex', 1, @isnumeric)
             addParameter(ip, 'scannerKit', 'mlsiemens.BiographMMRKit', @ischar)
             addParameter(ip, 'tracer', '', @ischar);
@@ -729,7 +685,6 @@ classdef SessionData < mlpipeline.ResolvingSessionData
 
             this.absScatterCorrected_ = ipr.abs;
             this.attenuationCorrected_ = ipr.ac;
-            this.dataFolder = ipr.dataFolder;
             this.scanIndex = ipr.scanIndex;
             this.scannerKit_ = ipr.scannerKit;
             this.tracer_ = ipr.tracer;

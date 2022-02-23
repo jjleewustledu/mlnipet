@@ -33,8 +33,8 @@ classdef SubjectData < mlpipeline.SubjectData
     
     methods (Static)
         function sesf = findExperiments(subS, subf)
-            %% subS is struct from subjectsJson
-            %  subf is folder on filesystem
+            %  @param subS is struct from subjectsJson
+            %  @param subf is folder on filesystem
 
             import mlnipet.SubjectData
             sesf = {};                
@@ -58,15 +58,15 @@ classdef SubjectData < mlpipeline.SubjectData
             end
         end
         function tf = hasScanFolders(subf, sesf)
-            %% @param subf
+            %  @param subf
             %  @param sesf
             
-            if ~isfolder(fullfile(getenv('SUBJECTS_DIR'), subf, sesf, ''))
+            if ~isfolder(fullfile(this.subjectsDir, subf, sesf, ''))
                 tf = false;
                 return
             end
             globbed = globFoldersT( ...
-                fullfile(getenv('SUBJECTS_DIR'), subf, sesf, '*_DT*.000000-Converted-AC', ''));
+                fullfile(this.subjectsDir, subf, sesf, '*_DT*.000000-Converted-AC', ''));
             tf = ~isempty(globbed);
         end
     end
@@ -91,8 +91,8 @@ classdef SubjectData < mlpipeline.SubjectData
             end
         end
         function        aufbauSessionPath(this, sub_pth, S_sub, varargin)
-            %% refreshes subjects/ses-S12345/ses-E12345/TRA_DT123456.000000-Converted-AC with short-name sym-links to 
-            %            CCIR_00123/ses-S12345/ses-E12345/TRA_DT123456.000000-Converted-AC. 
+            %% refreshes subjects/sub-S12345/ses-E12345/TRA_DT123456.000000-Converted-AC with short-name sym-links to 
+            %            CCIR_00123/ses-E12345/TRA_DT123456.000000-Converted-AC. 
             %  e. g., /subjectsDir/sub-S40037/{ses-E182819, ses-E182853, ...}/tracer.4dfp.*, with sym-linked tracer.4dfp.*
             
             ip = inputParser;
@@ -123,12 +123,13 @@ classdef SubjectData < mlpipeline.SubjectData
                     if (~isempty(fcell))
                         e1 = this.studyRegistry_.experimentID_to_ses(e{1});
                         try
+                            prj_pth = prjData.projectPath;
                             this.lns_tracers( ...
-                                fullfile(prjData.projectSessionPath(e1), ''), ...
+                                fullfile(prj_pth, e1, ''), ...
                                 fullfile(sub_pth, e1, ''), ...
                                 fcell);
                             this.lns_surfer( ...
-                                fullfile(prjData.projectSessionPath(e1), ''), ...
+                                fullfile(prj_pth, e1, ''), ...
                                 fullfile(sub_pth, e1, ''));
                         catch ME
                             handwarning(ME);
@@ -151,11 +152,11 @@ classdef SubjectData < mlpipeline.SubjectData
         end
         function [fcell,prjData] = ensuredirsScans(this, sub_ses_pth)
             %  @return fcell is cell array of scan-folders
-            %  @return prjData := this.createProjectData is mlnipet.ProjectData.
+            %  @return prjData := this.createProjectData is mlpipeline.ProjectData.
             
             ses = mybasename(sub_ses_pth);
             prjData = this.createProjectData('sessionStr', ses);
-            prj_ses_pth = prjData.projectSessionPath(ses);
+            prj_ses_pth = fullfile(prjData.projectPath, ses, '');
             prj_ses_scn_pth = cellfun(@(x) fullfile(prj_ses_pth, [x '*-Converted']), this.TRACERS, 'UniformOutput', false);
             dtt = mlpet.DirToolTracer('tracer', prj_ses_scn_pth, 'ac', true);
             fcell = dtt.dns;
