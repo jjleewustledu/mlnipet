@@ -21,6 +21,7 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
         referenceTracer        
         ReferenceTracer
         t4ResolveBuilderBlurArg
+        umapPath
         useNiftyPet
     end
     
@@ -233,9 +234,8 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
                 if (isempty(g))
                     g = '';
                 end
-            catch ME
-                handwarning(ME)
-                g = NaT;
+            catch
+                g = '';
             end
         end
         function g    = get.fractionalImageFrameThresh(this)
@@ -273,7 +273,14 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
         end
         function g    = get.t4ResolveBuilderBlurArg(this)
             g = this.tracerBlurArg;
-        end   
+        end
+        function g    = get.umapPath(this)
+            if strcmp(this.registry.umapType, 'deep')
+                g = fullfile(this.scanPath);
+                return
+            end
+            g = fullfile(this.sessionPath);
+        end
         function g    = get.useNiftyPet(~)
             g = true;
         end 
@@ -490,7 +497,7 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             
             if (isempty(tr))
                 fqfn = fullfile( ...
-                    this.sessionPath, ...
+                    this.umapPath, ...
                     sprintf('umapSynth_op_%s%s%s', ...
                             this.T1001('typ', 'fp'), ip.Results.blurTag, this.filetypeExt));
             else

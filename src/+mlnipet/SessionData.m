@@ -1,4 +1,4 @@
-classdef SessionData < mlpipeline.ResolvingSessionData
+classdef SessionData < mlpipeline.SessionData
 	%% SESSIONDATA  
 
 	%  $Revision$
@@ -7,7 +7,14 @@ classdef SessionData < mlpipeline.ResolvingSessionData
  	%% It was developed on Matlab 9.5.0.1067069 (R2018b) Update 4 for MACI64.  Copyright 2019 John Joowon Lee.
     
     properties
+        compAlignMethod = 'align_multiSpectral'
         dataAugmentation
+        epoch
+        filetypeExt = '.4dfp.hdr'
+        frameAlignMethod = 'align_2051'
+        ignoreFinishMark = false
+        outfolder = 'output'
+        reconstructionMethod = 'NiftyPET'
         scanIndex = 1
     end
 
@@ -24,7 +31,18 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         studyCensus
         tauIndices % use to exclude late frames from builders of AC; e.g., taus := taus(tauIndices)
         tauMultiplier
-        tracer 		
+        tracer 	
+
+        dbgTag
+        epochTag
+        frameTag
+        maxLengthEpoch
+        metricTag
+        parcellationTag % alias of regionTag
+        regionTag
+        resolveTag
+        rnumber
+        supEpoch
     end
 
 	methods 
@@ -73,7 +91,7 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             if ~isempty(this.dataAugmentation)
                 for f = fields(this.dataAugmentation)
                     val = this.dataAugmentation.(f{1});
-                    if ischar(val)
+                    if istext(val)
                         g = [g '_' f{1} upper(val(1)) val(2:end)]; %#ok<AGROW>
                     end
                     if isnumeric(val)
@@ -144,12 +162,115 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             end
         end
         function this = set.tracer(this, t)
-            assert(ischar(t));
+            assert(istext(t));
             if (~strcmpi(this.tracer_, t))
                 this.scanFolder_ = '';
             end
             this.tracer_ = t;
         end        
+        
+        function g    = get.dbgTag(~)
+            if (~isempty(getenv('DEBUG')))
+                g = '_DEBUG';
+            else
+                g = '';
+            end
+        end
+        function g    = get.epochTag(this)
+            if (isempty(this.epoch))
+                g = '';
+                return
+            end
+            assert(isnumeric(this.epoch));
+            if (1 == length(this.epoch))
+                g = sprintf('e%i', this.epoch);
+            else
+                g = sprintf('e%ito%i', this.epoch(1), this.epoch(end));
+            end
+        end 
+        function g    = get.frameTag(this)
+            assert(isnumeric(this.frame));
+            if (isnan(this.frame))
+                g = '';
+                return
+            end
+            g = sprintf('_frame%i', this.frame);
+        end
+        function g    = get.maxLengthEpoch(this)
+            if (~this.attenuationCorrected)
+                g = 8;
+                return
+            end 
+            g = 16;
+        end
+        function g    = get.metricTag(this)
+            if isempty(this.metric)
+                g = '';
+                return
+            end
+            if ischar(this.metric)
+                g = sprintf('_%s', this.metric);
+                return
+            end
+            error('mlpipeline:TypeError', ...
+                'ResolvingSessionData.get.metricTag');            
+        end
+        function g    = get.parcellationTag(this)
+            g = this.regionTag;
+        end
+        function g    = get.regionTag(this)
+            if isempty(this.region)
+                g = '';
+                return
+            end
+            if isnumeric(this.region)
+                g = sprintf('_%i', this.region);
+                return
+            end
+            if ischar(this.region)
+                g = sprintf('_%s', this.region);
+                return
+            end
+            if isa(this.region, 'mlfourd.ImagingContext2') || isa(x, 'mlfourd.ImagingFormatContext')
+                g = sprintf('_%s', this.region.fileprefix);
+                return
+            end
+            error('mlpipeline:TypeError', ...
+                'ResolvingSessionData.get.regionTag');
+        end
+        function g    = get.resolveTag(this)
+            if (~isempty(this.resolveTag_))
+                g = this.resolveTag_;
+                return
+            end
+            try
+                g = ['op_' this.tracerRevision('typ','fp')];
+            catch
+                g = 'op_reference';
+            end
+        end
+        function this = set.resolveTag(this, s)
+            assert(ischar(s));
+            this.resolveTag_ = s;
+        end
+        function g    = get.rnumber(this)
+            g = this.rnumber_;
+        end
+        function this = set.rnumber(this, r)
+            assert(isnumeric(r));
+            this.rnumber_ = r;
+        end
+        function g    = get.supEpoch(this)
+            if (~isempty(this.supEpoch_))
+                g = this.supEpoch_;
+                return
+            end
+            g = ceil(length(this.taus) / this.maxLengthEpoch);
+        end
+        function this = set.supEpoch(this, s) 
+            assert(isnumeric(s));
+            this.supEpoch_ = s;
+        end
         
         %% IMRData
         
@@ -164,10 +285,10 @@ classdef SessionData < mlpipeline.ResolvingSessionData
 
             ip = inputParser;
             ip.KeepUnmatched = true;
-            addRequired( ip, 'desc', @ischar);
+            addRequired( ip, 'desc', @istext);
             addParameter(ip, 'orientation', '', @(x) lstrcmp({'sagittal' 'transverse' 'coronal' ''}, x));
-            addParameter(ip, 'tag', '', @ischar);
-            addParameter(ip, 'typ', 'fqfp', @ischar);
+            addParameter(ip, 'tag', '', @istext);
+            addParameter(ip, 'typ', 'fqfp', @istext);
             parse(ip, varargin{:});
 
             fqfn = fullfile(this.fourdfpLocation, ...
@@ -181,9 +302,9 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         end
         function obj  = studyAtlas(this, varargin)
             ip = inputParser;
-            addParameter(ip, 'desc', 'HYGLY_atlas', @ischar);
-            addParameter(ip, 'tag', '', @ischar);
-            addParameter(ip, 'typ', 'mlfourd.ImagingContext2', @ischar);
+            addParameter(ip, 'desc', 'HYGLY_atlas', @istext);
+            addParameter(ip, 'tag', '', @istext);
+            addParameter(ip, 'typ', 'mlfourd.ImagingContext2', @istext);
             parse(ip, varargin{:});
 
             obj = imagingType(ip.Results.typ, ...
@@ -252,9 +373,9 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         function obj  = ctObject(this, varargin)
             ip = inputParser;
             ip.KeepUnmatched = true;
-            addRequired( ip, 'desc', @ischar);
-            addParameter(ip, 'tag', '', @ischar);
-            addParameter(ip, 'typ', 'fqfp', @ischar);
+            addRequired( ip, 'desc', @istext);
+            addParameter(ip, 'tag', '', @istext);
+            addParameter(ip, 'typ', 'fqfp', @istext);
             parse(ip, varargin{:});
             
             fqfn = fullfile(this.sessionLocation, ...
@@ -299,9 +420,9 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         function obj  = petObject(this, varargin)
             ip = inputParser;
             ip.KeepUnmatched = true;
-            addRequired( ip, 'tracer', @ischar);
-            addParameter(ip, 'tag', '', @ischar);
-            addParameter(ip, 'typ', 'fqfp', @ischar);
+            addRequired( ip, 'tracer', @istext);
+            addParameter(ip, 'tag', '', @istext);
+            addParameter(ip, 'typ', 'fqfp', @istext);
             parse(ip, varargin{:});
             suff = ip.Results.tag;
             if (~isempty(suff) && ~strcmp(suff(1),'_'))
@@ -361,17 +482,15 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function loc  = tracerListmodeLocation(this, varargin)
-            %% Siemens legacy
-            
+            %% expectations of NiftyPET
+
             ipr = this.iprLocation(varargin{:});
             loc = locationType(ipr.typ, ...
-                fullfile(this.sessionPath, ...
-                         sprintf('%s-%s', ipr.tracer,  this.convertedTag), ...
-                         sprintf('%s-LM-00', ipr.tracer), ''));
+                fullfile(this.sessionPath, this.scanFolder, 'LM', ''));
         end
         function loc  = tracerLocation(this, varargin)
             ip = inputParser;
-            addParameter(ip, 'typ', 'path', @ischar);
+            addParameter(ip, 'typ', 'path', @istext);
             parse(ip, varargin{:});
             
             loc = locationType(ip.Results.typ, this.scanPath);
@@ -395,6 +514,13 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                 'output', 'PET', ...
                 sprintf('%s.nii.gz', tr));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
+        end
+        function loc  = tracerNormLocation(this, varargin)
+            %% expectations of NiftyPET
+
+            ipr = this.iprLocation(varargin{:});
+            loc = locationType(ipr.typ, ...
+                fullfile(this.sessionPath, this.scanFolder, 'norm', ''));
         end
         function loc  = tracerOutputLocation(this, varargin)
             ipr = this.iprLocation(varargin{:});
@@ -420,6 +546,11 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                 sprintf('%sr1%s', lower(ipr.tracer), this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
+        function loc  = tracerRawdataLocation(this, varargin)
+            ipr = this.iprLocation(varargin{:});
+            loc = locationType(ipr.typ, ...
+                fullfile(this.sessionPath, 'rawdata', ''));
+        end
         function obj  = tracerScrubbed(this, varargin)
             fqfn = sprintf('%s_scrubbed%s', this.tracerResolved('typ', 'fqfp'), this.filetypeExt);
             obj  = this.fqfilenameObject(fqfn, varargin{:});
@@ -440,6 +571,13 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             fqfn = fullfile(this.sessionPath, ...
                 sprintf('%sr%i_suvr%s%s', lower(name), this.rnumber, this.atlasTag, this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
+        end
+        function loc  = tracerUmapLocation(this, varargin)
+            %% expectations of NiftyPET
+
+            ipr = this.iprLocation(varargin{:});
+            loc = locationType(ipr.typ, ...
+                fullfile(this.sessionPath, this.scanFolder, 'umap', ''));
         end
         function obj  = tracerTimeWindowed(this, varargin)
             fqfn = fullfile(this.sessionPath, ...
@@ -629,11 +767,11 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             ip = inputParser;
             ip.KeepUnmatched = true;
             addParameter(ip, 'ac',      this.attenuationCorrected, @islogical);
-            addParameter(ip, 'tracer',  this.tracer, @ischar);
+            addParameter(ip, 'tracer',  this.tracer, @istext);
             addParameter(ip, 'frame',   this.frame, @isnumeric);
             addParameter(ip, 'rnumber', this.rnumber, @isnumeric);
             addParameter(ip, 'snumber', this.snumber, @isnumeric);
-            addParameter(ip, 'typ', 'path', @ischar);
+            addParameter(ip, 'typ', 'path', @istext);
             parse(ip, varargin{:});            
             ipr = ip.Results;
             this.attenuationCorrected_ = ip.Results.ac;
@@ -643,20 +781,17 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             this.frame_   = ip.Results.frame;
         end
         function f    = jsonFilename(this)
-            glob_expr = '*_DT*.json';
             try
                 glob_expr = fullfile(this.tracerOutputPetLocation, [upper(this.tracer) '_DT*.json']);
                 dt = mlsystem.DirTool(glob_expr);
                 assert(1 == dt.length, [evalc('disp(dt)') '\n' evalc('disp(dt.fqfns)')]);
                 f = dt.fqfns{1};
-            catch ME
-                warning('mlpipeline:RuntimeWarning', 'SessionData.jsonFilename could not find %s', glob_expr);
-                handwarning(ME);
+            catch
                 f = '';
             end
         end
         function this = setScanFolder(this, s)
-            assert(ischar(s));
+            assert(istext(s));
             this.scanFolder_ = s;
             this = this.adjustAttenuationCorrectedFromScanFolder;
         end
@@ -672,21 +807,26 @@ classdef SessionData < mlpipeline.ResolvingSessionData
             %         'tracer'            is char
             %          'dataAugmentation' is struct
 
- 			this = this@mlpipeline.ResolvingSessionData(varargin{:});
+ 			this = this@mlpipeline.SessionData(varargin{:});
             
             ip = inputParser;
             ip.KeepUnmatched = true;
             addParameter(ip, 'abs', false, @islogical);
             addParameter(ip, 'ac', false, @islogical);
-            addParameter(ip, 'scanIndex', 1, @isnumeric)
-            addParameter(ip, 'scannerKit', 'mlsiemens.BiographMMRKit', @ischar)
-            addParameter(ip, 'tracer', '', @ischar);
             addParameter(ip, 'dataAugmentation', []);
+            addParameter(ip, 'resolveTag', '', @ischar);
+            addParameter(ip, 'rnumber', 1, @isnumeric);
+            addParameter(ip, 'scanIndex', 1, @isnumeric)
+            addParameter(ip, 'scannerKit', 'mlsiemens.BiographMMRKit', @istext)
+            addParameter(ip, 'tracer', '', @istext);
             parse(ip, varargin{:}); 
             ipr = ip.Results;
 
             this.absScatterCorrected_ = ipr.abs;
             this.attenuationCorrected_ = ipr.ac;
+            this.dataAugmentation = ipr.dataAugmentation;
+            this.resolveTag_ = ipr.resolveTag;
+            this.rnumber_ = ipr.rnumber;
             this.scanIndex = ipr.scanIndex;
             this.scannerKit_ = ipr.scannerKit;
             this.tracer_ = ipr.tracer;
@@ -698,10 +838,6 @@ classdef SessionData < mlpipeline.ResolvingSessionData
                 j = jsondecode(fileread(this.jsonFilename));
                 this.taus_ = j.taus';
             end
-            
-            %% data augmentation for machine learning
-            
-            this.dataAugmentation = ipr.dataAugmentation;
  		end
     end
     
@@ -711,7 +847,10 @@ classdef SessionData < mlpipeline.ResolvingSessionData
         absScatterCorrected_
         attenuationCorrected_
         proximityTable_
+        resolveTag_
+        rnumber_
         scannerKit_
+        supEpoch_
         tracer_
     end
     

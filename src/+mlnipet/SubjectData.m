@@ -96,7 +96,7 @@ classdef SubjectData < mlpipeline.SubjectData
             %  e. g., /subjectsDir/sub-S40037/{ses-E182819, ses-E182853, ...}/tracer.4dfp.*, with sym-linked tracer.4dfp.*
             
             ip = inputParser;
-            addParameter(ip, 'experimentPattern', '_E', @ischar)
+            addParameter(ip, 'experimentPattern', '_E', @istext)
             parse(ip, varargin{:})
             
             if isfield(S_sub, 'aliases')
@@ -107,7 +107,7 @@ classdef SubjectData < mlpipeline.SubjectData
             
             % base case
             assert(isfield(S_sub, 'experiments'))
-            if ischar(S_sub.experiments)
+            if istext(S_sub.experiments)
                 S_sub.experiments = {S_sub.experiments};
             end
             for e = asrow(S_sub.experiments)
@@ -179,7 +179,7 @@ classdef SubjectData < mlpipeline.SubjectData
             %  @param sub_ses_pth is f.q. path
             %  @param fcell is cell of scan-folders for prj_ses_pth and sub_ses_pth
                                         
-            if ischar(scncell)
+            if istext(scncell)
                 scncell = {scncell};
             end
             for scn = asrow(scncell)

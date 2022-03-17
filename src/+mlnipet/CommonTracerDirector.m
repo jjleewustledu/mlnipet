@@ -47,6 +47,19 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
                     'CommonTracerDirector.addMirrorUmap could not generate registered mirror umap')
             end
         end
+        function ipr = adjustIprConstructResolvedStudy(ipr)
+            ss = strsplit(ipr.foldersExpr, filesep);
+            assert(3 == length(ss));
+            ipr.projectsExpr = ss{1};
+            ipr.sessionsExpr = ss{2};
+            ipr.tracersExpr = ss{3};
+            results = {'projectsExpr' 'sessionsExpr' 'tracersExpr'};
+            for r = 1:length(results)
+                if (~lstrfind(ipr.(results{r}), '*'))
+                    ipr.(results{r}) = [ipr.(results{r}) '*'];
+                end
+            end
+        end  
         function umap = alignMirrorUmapToOO(sessd)
             pwd0 = pushd(sessd.tracerOutputPetLocation());
             
@@ -119,6 +132,17 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             this = mlnipet.CommonTracerDirector(mlpet.TracerResolveBuilder(varargin{:}));   
             this = this.instanceCleanResolved;
         end
+        function constructNiftyPETy(varargin)     
+            %  @param sessionData is mlpipeline.ISessionData.
+
+            ip = inputParser;
+            ip.KeepUnmatched = true;
+            addParameter(ip, 'sessionData', @(x) isa(x, 'mlpipeline.ISessionData'))
+            parse(ip, varargin{:});
+            
+            bldr = mlpet.NiftyPETyBuilder(varargin{:});
+            bldr.setupTracerRawdataLocation();
+        end
         function ic2  = flipKLUDGE____(ic2)
             assert(isa(ic2, 'mlfourd.ImagingContext2'), 'mlnipet:TypeError', 'TracerDirector2.flipKLUDGE____');
             warning('mlnipet:RuntimeWarning', 'KLUDGE:TracerDirector2.flipKLUDGE____ is active');
@@ -142,7 +166,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             end            
             popd(pwd0)
         end
-        function loc  = getProximalOOLocation(sessd)
+        function loc = getProximalOOLocation(sessd)
             loc = pwd;
             tracerdt = location2datetime(sessd.tracerLocation);
             separation = days(1);
@@ -154,7 +178,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
                 end
             end
         end
-        function tmp  = migrationTeardown(fps, logs, dest_fqfp0, dest)
+        function tmp = migrationTeardown(fps, logs, dest_fqfp0, dest)
             tmp = protectFiles(fps, fps{1}, logs);
             deleteFiles(dest_fqfp0, fps{1}, fps, dest);   
             unprotectFiles(tmp);
@@ -228,7 +252,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
                 'mlnipet:RuntimeError', 'CommonTracerDirector.populateTracerUmapFolder found empty umap folder')
             popd(pwd0)
         end
-        function lst  = prepareFreesurferData(varargin)
+        function lst = prepareFreesurferData(varargin)
             %% PREPAREFREESURFERDATA prepares session-specific copies of data enumerated by this.freesurferData.
             %  @param named sessionData is an mlpipeline.ISessionData.
             %  @return 4dfp copies of this.freesurferData in sessionData.sessionPath.
@@ -347,7 +371,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             inst.projectsDir = fullfile(getenv('PROJECTS_DIR'));
             inst.subjectsDir = fullfile(getenv('SUBJECTS_DIR'));
         end
-        function           fastFilesystemTeardownProject(this)
+        function fastFilesystemTeardownProject(this)
             try
                 fastProjPath = fullfile(this.FAST_FILESYSTEM, ...
                                         getenv('SUBJECTS_DIR'), ...
@@ -396,6 +420,9 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
                 this = this.packageTracerResolvedR1;
             catch ME
                 if (strcmp(ME.identifier, 'mlnipet:FileNotFoundError'))
+
+                    %% recover umap, LM, norm folders from Converted-AC; e.g., after restarting from failure
+
                     sessd = this.sessionData;
                     sessd.attenuationCorrected = true;  
                     if isfolder(fullfile(sessd.scanPath, 'umap', ''))
@@ -488,22 +515,6 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
     end
 
     %% PROTECTED
-    
-    methods (Static, Access = protected)
-        function ipr = adjustIprConstructResolvedStudy(ipr)
-            ss = strsplit(ipr.foldersExpr, filesep);
-            assert(3 == length(ss));
-            ipr.projectsExpr = ss{1};
-            ipr.sessionsExpr = ss{2};
-            ipr.tracersExpr = ss{3};
-            results = {'projectsExpr' 'sessionsExpr' 'tracersExpr'};
-            for r = 1:length(results)
-                if (~lstrfind(ipr.(results{r}), '*'))
-                    ipr.(results{r}) = [ipr.(results{r}) '*'];
-                end
-            end
-        end  
-    end
     
     methods (Access = protected)
         function deleteEpochs__(this)
