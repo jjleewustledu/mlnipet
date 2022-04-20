@@ -148,6 +148,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             warning('mlnipet:RuntimeWarning', 'KLUDGE:TracerDirector2.flipKLUDGE____ is active');
             ic2 = ic2.flip(1);
             ic2.ensureSingle;
+            ic2.fileprefix = 'umapSynth';
         end
         function umap = getOOMirrorForTracer(sessd)
             import mlnipet.CommonTracerDirector.*
@@ -415,7 +416,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             this.builder_.markAsFinished;
         end
         function this = instanceConstructResolvedNAC(this)
-            mlnipet.NipetBuilder.CreatePrototypeNAC(this.sessionData);   
+            mlnipet.NipetBuilder.CreatePrototypeNAC(this.sessionData);
             try
                 this = this.packageTracerResolvedR1;
             catch ME
