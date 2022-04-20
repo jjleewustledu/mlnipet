@@ -557,19 +557,19 @@ classdef SessionData < mlpipeline.SessionData
         end        
         function obj  = tracerSuvr(this, varargin)
             fqfn = fullfile(this.sessionPath, ...
-                sprintf('%s_suvr%s%s', this.tracerRevision('typ', 'fp'), this.atlasTag, this.filetypeExt));
+                sprintf('%s_suvr_%s%s', this.tracerRevision('typ', 'fp'), this.atlasTag, this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function obj  = tracerSuvrAveraged(this, varargin)   
             ipr = this.iprLocation(varargin{:});         
             fqfn = fullfile(this.sessionPath, ...
-                sprintf('%sa%sr%i_suvr%s%s', ...
+                sprintf('%sa%sr%i_suvr_%s%s', ...
                 lower(ipr.tracer), this.epochTag, ipr.rnumber, this.atlasTag, this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function obj  = tracerSuvrNamed(this, name, varargin)
             fqfn = fullfile(this.sessionPath, ...
-                sprintf('%sr%i_suvr%s%s', lower(name), this.rnumber, this.atlasTag, this.filetypeExt));
+                sprintf('%sr%i_suvr_%s%s', lower(name), this.rnumber, this.atlasTag, this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function loc  = tracerUmapLocation(this, varargin)
@@ -586,7 +586,7 @@ classdef SessionData < mlpipeline.SessionData
         end
         function obj  = tracerTimeWindowedOnAtl(this, varargin)
             fqfn = fullfile(this.sessionPath, ...
-                sprintf('%s_timeWindowed%s%s', this.tracerRevision('typ', 'fp'), this.atlasTag, this.filetypeExt));
+                sprintf('%s_timeWindowed_%s%s', this.tracerRevision('typ', 'fp'), this.atlasTag, this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         

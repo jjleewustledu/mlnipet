@@ -24,17 +24,20 @@ classdef (Abstract) MetabolicSessionData < mlnipet.ResolvingSessionData
             %  @param required metric is char.
             %  @param datetime is datetime or char, .e.g., '20200101000000' | ''.
             %  @param dateonlhy is logical.
-            %  @param tags is char, e.g., '_b43_wmparc1_b43'
+            %  @param tags is char, e.g., 'b43_wmparc1_b43', default ''.
             
             ip = inputParser;
             ip.KeepUnmatched = true;
             addRequired(ip, 'metric', @ischar)
             addParameter(ip, 'datetime', this.datetime, @(x) isdatetime(x) || ischar(x))
             addParameter(ip, 'dateonly', false, @islogical)
-            addParameter(ip, 'tags', '', @ischar)
+            addParameter(ip, 'tags', '', @istext)
             parse(ip, metric, varargin{:})
             ipr = ip.Results;
             
+            if ~isempty(ipr.tags)
+                ipr.tags = strcat("_", strip(ipr.tags, "_"));
+            end
             if ischar(ipr.datetime)
                 adatestr = ipr.datetime;
             end
@@ -48,7 +51,7 @@ classdef (Abstract) MetabolicSessionData < mlnipet.ResolvingSessionData
             
             fqfn = fullfile( ...
                 this.dataPath, ...
-                sprintf('%s%s%s%s%s', ...
+                sprintf('%s%s_%s%s%s', ...
                         lower(ipr.metric), ...
                         adatestr, ...
                         this.registry.atlasTag, ...
@@ -63,7 +66,7 @@ classdef (Abstract) MetabolicSessionData < mlnipet.ResolvingSessionData
         function obj  = parcOnAtlas(this, varargin)
             fqfn = fullfile( ...
                 this.dataPath, ...
-                sprintf('%s%s%s', this.parcellation, this.registry.atlasTag, this.filetypeExt));
+                sprintf('%s_%s%s', this.parcellation, this.registry.atlasTag, this.filetypeExt));
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function obj  = tracerOnAtlas(this, varargin)

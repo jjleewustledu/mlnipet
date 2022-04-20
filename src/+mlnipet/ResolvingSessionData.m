@@ -314,7 +314,7 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end
         function jitOnAtlas(this, varargin)
-            atlTag = strrep(this.registry.atlasTag, '_', '');
+            atlTag = strrep(this.registry.atlasTag, '_', ''); % safeguard
             import mlnipet.ResolvingSessionData.*
             switch lower(atlTag)
                 case '111'

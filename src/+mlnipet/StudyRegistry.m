@@ -15,7 +15,7 @@ classdef (Abstract) StudyRegistry < handle & mlpipeline.IStudyRegistry
     end
 
     properties 
-        atlasTag = '_111'
+        atlasTag = '111'
         comments = ''
         noclobber = true
         numberNodes
