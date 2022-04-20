@@ -196,6 +196,14 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
                 popd(pwd0) 
             end
         end
+        function fn = prefer_op(fn)
+            %% Retains fn with "_op_" tags but returns fn with "_on_" flags when only the latter exist on filesystem.
+
+            fn1 = strrep(fn, '_op_', '_on_');
+            if ~isfile(fn) && isfile(fn1)
+                fn = fn1;
+            end
+        end
     end
     
 	methods 
@@ -285,7 +293,7 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             g = true;
         end 
         
-        %%		   
+        %%
         
         function obj  = aparcA2009sAsegBinarized(this, varargin)
             fqfn = fullfile(this.tracerLocation, sprintf('aparcA2009sAseg_%s_binarized%s', this.resolveTag, this.filetypeExt));
@@ -506,10 +514,11 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
                     sprintf('umapSynth_op_%s%s', ...
                             this.tracerRevision('typ', 'fp'), this.filetypeExt));
             end
-            obj  = this.fqfilenameObject(fqfn, varargin{:});
+            fqfn = this.prefer_op(fqfn);
+            obj = this.fqfilenameObject(fqfn, varargin{:});
         end    
         function obj  = umapSynthOpT1001(this, varargin)
-            %  @returns umapSynth_op_T1001_b43 as fqfilenameObject with default blurTag->'_b43'
+            %  @returns umapSynth_(op|on)_T1001_b43 as fqfilenameObject with default blurTag->'_b43'
             
             obj  = this.umapSynth('tracer', '', varargin{:});
         end  
@@ -570,5 +579,4 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
     end
 
 	%  Created with Newcl by John J. Lee after newfcn by Frank Gonzalez-Morphy
- end
-
+end
