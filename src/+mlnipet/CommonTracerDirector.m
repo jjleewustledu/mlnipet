@@ -48,11 +48,12 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             end
         end
         function ipr = adjustIprConstructResolvedStudy(ipr)
+            %% adjusts ip.Results with new fields: 'projectsExpr', 'sessionsExpr', 'tracersExpr'.
+            
             ss = strsplit(ipr.foldersExpr, filesep);
-            assert(3 == length(ss));
-            ipr.projectsExpr = ss{1};
-            ipr.sessionsExpr = ss{2};
-            ipr.tracersExpr = ss{3};
+            ipr.projectsExpr = ss{contains(ss, 'CCIR_')};
+            ipr.sessionsExpr = ss{contains(ss, 'ses-')};
+            ipr.tracersExpr = ss{contains(ss, 'Converted-')};
             results = {'projectsExpr' 'sessionsExpr' 'tracersExpr'};
             for r = 1:length(results)
                 if (~lstrfind(ipr.(results{r}), '*'))
