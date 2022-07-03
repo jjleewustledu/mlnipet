@@ -17,7 +17,7 @@ classdef SubjectData < mlpipeline.SubjectData
  	%  was created 05-May-2019 22:07:18 by jjlee,
  	%  last modified $LastChangedDate$ and placed into repository /Users/jjlee/MATLAB-Drive/mlnipet/src/+mlnipet.
  	%% It was developed on Matlab 9.5.0.1067069 (R2018b) Update 4 for MACI64.  Copyright 2019 John Joowon Lee.
- 	
+    
     properties (Constant)
         SURFER_OBJECTS = {'aparcA2009sAseg' 'aparcAseg' 'brain' 'brainmask' 'wmparc' 'wmparc1' 'T1001'}
         % wmparc1 == 1 denotes CSF
@@ -26,49 +26,9 @@ classdef SubjectData < mlpipeline.SubjectData
 	properties (Dependent)
  		subjectsJson % see also aufbauSubjectsDir, subclass ctors
     end
-    
+
     methods (Abstract)
-        createProjectData(session_string)
-    end
-    
-    methods (Static)
-        function sesf = findExperiments(subS, subf)
-            %  @param subS is struct from subjectsJson
-            %  @param subf is folder on filesystem
-
-            import mlnipet.SubjectData
-            sesf = {};                
-
-            % base case
-            if isfield(subS, 'experiments')
-                for e = asrow(subS.experiments)
-                    ss = split(e{1}, '_');
-                    if SubjectData.hasScanFolders(subf, ['ses-' ss{2}])
-                        sesf = [sesf ['ses-' ss{2}]]; %#ok<AGROW>
-                    end
-                end
-            end
-
-            % recursion for aliases
-            if isfield(subS, 'aliases')
-                subjects = fields(subS.aliases);
-                for a = asrow(subjects)
-                    sesf = [sesf SubjectData.findExperiments(subS.aliases.(a{1}), subf)]; %#ok<AGROW>
-                end
-            end
-        end
-        function tf = hasScanFolders(subf, sesf)
-            %  @param subf
-            %  @param sesf
-            
-            if ~isfolder(fullfile(this.subjectsDir, subf, sesf, ''))
-                tf = false;
-                return
-            end
-            globbed = globFoldersT( ...
-                fullfile(this.subjectsDir, subf, sesf, '*_DT*.000000-Converted-AC', ''));
-            tf = ~isempty(globbed);
-        end
+        createProjectData(this, session_string)
     end
 
 	methods 
@@ -107,17 +67,17 @@ classdef SubjectData < mlpipeline.SubjectData
             
             % base case
             assert(isfield(S_sub, 'experiments'))
-            if istext(S_sub.experiments)
+            if istext(S_sub.experiments) && ~iscell(S_sub.experiments)
                 S_sub.experiments = {S_sub.experiments};
             end
             for e = asrow(S_sub.experiments)
                 
                 % look to studyRegistry for experiments to skip
-                if lstrfind(e{1}, this.studyRegistry_.ignoredExperiments)
+                if contains(e{1}, this.studyRegistry_.ignoredExperiments)
                     continue
                 end
                 
-                if lstrfind(e{1}, ip.Results.experimentPattern)
+                if contains(e{1}, ip.Results.experimentPattern)
                     d = this.ensuredirSes(sub_pth, e{1});
                     [fcell, prjData] = this.ensuredirsScans(d);
                     if (~isempty(fcell))
@@ -164,6 +124,44 @@ classdef SubjectData < mlpipeline.SubjectData
                 ensuredir(fullfile(sub_ses_pth, id{1}));
             end
         end
+        function sesf = findExperiments(this, subS, subf)
+            %  @param subS is struct from subjectsJson
+            %  @param subf is folder existing in StudyRegistry.instance().subjectsDir
+
+            sesf = {};                
+
+            % base case
+            if isfield(subS, 'experiments')
+                for e = asrow(subS.experiments)
+                    ss = split(e{1}, '_');
+                    if this.hasScanFolders(subf, ['ses-' ss{2}])
+                        sesf = [sesf ['ses-' ss{2}]]; %#ok<AGROW>
+                    end
+                end
+            end
+
+            % recursion for aliases
+            if isfield(subS, 'aliases')
+                subjects = fields(subS.aliases);
+                for a = asrow(subjects)
+                    sesf = [sesf this.findExperiments(subS.aliases.(a{1}), subf)]; %#ok<AGROW>
+                end
+            end
+        end
+        function tf   = hasScanFolders(this, subf, sesf)
+            %% bids folders CCIR_*/derivatives/sub-*/ses-*/
+            %  @param subf
+            %  @param sesf
+            
+            reg = this.studyRegistry_;
+            if ~isfolder(fullfile(reg.subjectsDir, subf, sesf, ''))
+                tf = false;
+                return
+            end
+            globbed = globFoldersT( ...
+                fullfile(reg.subjectsDir, subf, sesf, '*_DT*.000000-Converted-AC', ''));
+            tf = ~isempty(globbed);
+        end
         function        lns_surfer(~, prj_ses_pth, sub_ses_pth)
             %% sym-links project-session-scan surfer objects to subject-session-tracer path
             %  @param prj_ses_pth is f.q. path
@@ -179,7 +177,7 @@ classdef SubjectData < mlpipeline.SubjectData
             %  @param sub_ses_pth is f.q. path
             %  @param fcell is cell of scan-folders for prj_ses_pth and sub_ses_pth
                                         
-            if istext(scncell)
+            if istext(scncell) && ~iscell(scncell)
                 scncell = {scncell};
             end
             for scn = asrow(scncell)

@@ -319,7 +319,7 @@ classdef SessionData < mlpipeline.SessionData
             if (~lexist(fqfn, 'file') && isfolder(this.freesurferLocation))
                 mic = T1001@mlpipeline.SessionData(this, 'typ', 'mlfourd.ImagingContext2');
                 mic.nifti;
-                tn = tempname;
+                tn = strcat(tempname, '.nii.gz');
                 mic.saveas(tn);
                 mlbash(sprintf('fslreorient2std %s %s', tn, fqfn));
             end
@@ -458,6 +458,9 @@ classdef SessionData < mlpipeline.SessionData
         end
         function f    = scanPathWithAC(this, varargin)
             f = fullfile(this.sessionPath, this.scanFolderWithAC(varargin{:}));
+        end
+        function tod  = timeofday(this, varargin)
+            tod = timeofday(datetime(this), varargin{:});
         end
         function obj  = tr(this, varargin)
             %% transmission scan

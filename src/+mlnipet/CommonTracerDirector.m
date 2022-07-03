@@ -122,6 +122,18 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
                 ic2.save
             end
         end
+        function tf = ccir_folder_islink(fold)
+            %  Args:
+            %      fold (folder): e.g., '~/jjlee/Singularity/CCIR_00993/derivatives/nipet/ses-E19850'.
+            %  Returns:
+            %      tf: ~/jjlee/Singularity/CCIR_00993 is a sym-link.
+
+            assert(isfolder(fold));            
+            ss = strsplit(fold, filesep);
+            [~,idx] = max(contains(ss, 'CCIR'));
+            singfold = strcat(filesep, fullfile(ss{1:idx}));
+            tf = ~logical(system(sprintf('test -L %s', singfold)));
+        end
         function this = cleanResolved(varargin)
             %  @param varargin for mlpet.TracerResolveBuilder.
             %  @return ignores the first frame of OC and OO which are NAC since they have breathing tube visible.  
@@ -133,7 +145,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             this = mlnipet.CommonTracerDirector(mlpet.TracerResolveBuilder(varargin{:}));   
             this = this.instanceCleanResolved;
         end
-        function constructNiftyPETy(varargin)     
+        function constructNiftyPETy(varargin)
             %  @param sessionData is mlpipeline.ISessionData.
 
             ip = inputParser;
@@ -208,7 +220,7 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
                 assert(lstrfind(dest_fqfp0{end}, '_sumt'));
                 deleteExisting([dest_fqfp0{end} 'r1.4dfp.*']);
                 deleteExisting([dest_fqfp0{end} 'r1_op_' fps1 '.4dfp.*']);
-                deleteExisting([dest_fqfp0{end} 'r1_to_op_' fps1 '_t4']);
+                %deleteExisting([dest_fqfp0{end} 'r1_to_op_' fps1 '_t4']); % may break mlpet.SessionResolverToTracer.{oc,oo,ho}glob()
                 deleteExisting([dest_fqfp0{end} 'r1_to_T1001r1_t4']);
                 for f = 1:length(fps)
                     deleteExisting(fullfile(dest, ['T1001r1_to_' fps{f} 'r1_t4']));
@@ -276,8 +288,8 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             for f = 1:length(fsd)
                 if (~fv.lexist_4dfp(fullfile(sess.sessionPath, safefsd{f})))
                     try
-                        sess.mri_convert([fullfile(sess.mriLocation, fsd{f}) '.mgz'], [safefsd{f} '.nii']);
-                        ic2 = mlfourd.ImagingContext2([safefsd{f} '.nii']);
+                        sess.mri_convert([fullfile(sess.mriLocation, fsd{f}) '.mgz'], [safefsd{f} '.nii.gz']);
+                        ic2 = mlfourd.ImagingContext2([safefsd{f} '.nii.gz']);
                         ic2.saveas([safefsd{f} '.4dfp.hdr']);
                         lst{f} = fullfile(pwd, safefsd{f});
                     catch ME
