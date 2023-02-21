@@ -21,7 +21,6 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
         referenceTracer        
         ReferenceTracer
         t4ResolveBuilderBlurArg
-        umapPath
         useNiftyPet
     end
     
@@ -41,14 +40,15 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             if ~lstrfind(ipr.fexp, '_111')
                 return
             end 
-            if ~lstrfind(ipr.fexp, getenv('SINGULARITY_HOME'))
-                assert(strncmp(ipr.fexp, 'subjects', 8))
-                ipr.fexp = [getenv('SINGULARITY_HOME') ipr.fexp];
-            end
             fv = mlfourdfp.FourdfpVisitor();
             for globFolder = globT(myfileparts(ipr.fexp))
                 pwd0 = pushd(globFolder{1});
-                pwdt4 = myfileparts(globFolder{1});
+                pwdt4 = globFolder{1};
+                t4Atl = fullfile(pwdt4, 'T1001_to_TRIO_Y_NDC_t4');
+                if ~isfile(t4Atl)
+                    assert(isfile('T1001.4dfp.hdr'));
+                    fv.mpr2atl1_4dfp('T1001');
+                end
                 ss = strsplit(basename(ipr.fexp), '_111.4dfp');
                 fexpNoAtl = [ss{1} '.4dfp.hdr'];            
                 for globNoAtl = globT(fexpNoAtl)
@@ -56,8 +56,6 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
                         fpNoAtl = myfileprefix(globNoAtl{1});
                         fpOnAtl = [mybasename(fpNoAtl) '_111'];
                         if ~isfile([fpOnAtl '.4dfp.hdr'])
-                            t4Atl = fullfile(pwdt4, 'T1001_to_TRIO_Y_NDC_t4');
-                            assert(isfile(t4Atl))
                             t4Tracer = [fpNoAtl '_to_T1001_t4'];
                             assert(isfile(t4Tracer))
                             t4 = [fpNoAtl '_to_TRIO_Y_NDC_t4'];
@@ -72,8 +70,6 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
                         fpNoAtl = myfileprefix(globNoAtl{1});
                         fpOnAtl = [mybasename(fpNoAtl) '_111'];
                         if ~isfile([fpOnAtl '.4dfp.hdr'])
-                            t4Atl = fullfile(pwdt4, 'T1001_to_TRIO_Y_NDC_t4');
-                            assert(isfile(t4Atl))
                             fpNoAtlStem = strsplit(fpNoAtl, '_');
                             fpNoAtlStem = fpNoAtlStem{1};
                             t4Tracer = [fpNoAtlStem '_to_T1001_t4'];
@@ -90,8 +86,6 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
                         fpNoAtl = myfileprefix(globNoAtl{1});
                         fpOnAtl = [mybasename(fpNoAtl) '_111'];
                         if ~isfile([fpOnAtl '.4dfp.hdr'])
-                            t4Atl = fullfile(pwdt4, 'T1001_to_TRIO_Y_NDC_t4');
-                            assert(isfile(t4Atl))
                             fv.t4img_4dfp(t4Atl, fpNoAtl, 'out', [fpNoAtl '_111'], 'options', ipr.options)
                         end                        
                         continue
@@ -100,8 +94,6 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
                         fpNoAtl = myfileprefix(globNoAtl{1});
                         fpOnAtl = [mybasename(fpNoAtl) '_111'];
                         if ~isfile([fpOnAtl '.4dfp.hdr'])
-                            t4Atl = fullfile(pwdt4, 'T1001_to_TRIO_Y_NDC_t4');
-                            assert(isfile(t4Atl))
                             fv.t4img_4dfp(t4Atl, fpNoAtl, 'out', [fpNoAtl '_111'], 'options', ['-n ' ipr.options])
                         end                        
                         continue
@@ -125,14 +117,10 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             if ~lstrfind(ipr.fexp, '_222')
                 return
             end 
-            if ~lstrfind(ipr.fexp, getenv('SINGULARITY_HOME'))
-                assert(strncmp(ipr.fexp, 'subjects', 8))
-                ipr.fexp = [getenv('SINGULARITY_HOME') ipr.fexp];
-            end
             fv = mlfourdfp.FourdfpVisitor();
             for globFolder = globT(myfileparts(ipr.fexp))
                 pwd0 = pushd(globFolder{1});
-                pwdt4 = myfileparts(globFolder{1});
+                pwdt4 = globFolder{1};
                 ss = strsplit(basename(ipr.fexp), '_222.4dfp');
                 fexpNoAtl = [ss{1} '.4dfp.hdr'];            
                 for globNoAtl = globT(fexpNoAtl)
@@ -173,10 +161,6 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             
             if ~lstrfind(fexp, '_on_T1001')
                 return
-            end
-            if ~lstrfind(fexp, getenv('SINGULARITY_HOME'))
-                assert(strncmp(fexp, 'subjects', 8))
-                fexp = [getenv('SINGULARITY_HOME') fexp];
             end
             for globFolder = globT(myfileparts(fexp))
                 pwd0 = pushd(globFolder{1});
@@ -282,13 +266,6 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
         function g    = get.t4ResolveBuilderBlurArg(this)
             g = this.tracerBlurArg;
         end
-        function g    = get.umapPath(this)
-            if strcmp(this.registry.umapType, 'deep')
-                g = fullfile(this.scanPath);
-                return
-            end
-            g = fullfile(this.sessionPath);
-        end
         function g    = get.useNiftyPet(~)
             g = true;
         end 
@@ -323,7 +300,7 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
         end
         function jitOnAtlas(this, varargin)
             atlTag = strrep(this.registry.atlasTag, '_', ''); % safeguard
-            import mlnipet.ResolvingSessionData.*
+            import mlnipet.ResolvingSessionData;
             switch lower(atlTag)
                 case '111'
                     ResolvingSessionData.jitOn111(varargin{:});
@@ -368,7 +345,7 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             catch ME 
                 dispwarning(ME, 'mlraichle:RuntimeWarning', ...
                     'SessionData.readDatetime0');
-                [dt0_,date_] = readDatetime0@mlpipeline.SessionData(this);
+                [dt0_,date_] = readDatetime0@mlpipeline.SessionData2022(this);
             end
         end
         function tag  = resolveTagFrame(this, varargin)
@@ -483,6 +460,13 @@ classdef (Abstract) ResolvingSessionData < mlnipet.SessionData
             fqfn = sprintf('%s_sumt%s', this.tracerRevision(varargin{:}, 'typ', 'fqfp'), this.filetypeExt);
             obj  = this.fqfilenameObject(fqfn, varargin{:});
         end  
+        function u    = umapPath(this)
+            if strcmp(this.registry.umapType, 'deep')
+                u = fullfile(this.scanPath);
+                return
+            end
+            u = fullfile(this.sessionPath);
+        end
         function obj  = umapPhantom(this, varargin)
             ip = inputParser;
             ip.KeepUnmatched = true;

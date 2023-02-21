@@ -1,5 +1,10 @@
 classdef (Abstract) MetabolicSessionData < mlnipet.ResolvingSessionData
 	%% METABOLICSESSIONDATA  
+    %  KLUDGE in ctor:
+    %      this.modelConstraints.t0_forced := exceptional values for
+    %          mlan.SessionData.scanFolder == "OC_DT20191008101529"
+    %          mlan.SessionData.scanFolder == "OC_DT20191008110955"
+    %          mlan.SessionData.scanFolder == "OO_DT20200110122540"
 
 	%  $Revision$
  	%  was created 25-Feb-2021 14:56:50 by jjlee,
@@ -10,8 +15,24 @@ classdef (Abstract) MetabolicSessionData < mlnipet.ResolvingSessionData
         registry
         tracers
     end
+
+    properties (Dependent)
+        t0_forced
+    end
     
 	methods 
+
+        %% GET
+
+        function g = get.t0_forced(this)
+            g = [];
+            if isstruct(this.modelConstraints) && isfield(this.modelConstraints, 't0_forced')
+                g = this.modelConstraints.t0_forced;
+            end
+        end
+
+        %%
+
         function obj  = aifsOnAtlas(this, varargin)
             tr = lower(this.tracer);
             obj = this.metricOnAtlas(['aif_' tr], varargin{:});

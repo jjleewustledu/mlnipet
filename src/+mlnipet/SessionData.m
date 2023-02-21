@@ -1,4 +1,4 @@
-classdef SessionData < mlpipeline.SessionData
+classdef SessionData < mlpipeline.SessionData2022
 	%% SESSIONDATA  
 
 	%  $Revision$
@@ -317,7 +317,7 @@ classdef SessionData < mlpipeline.SessionData
         function obj  = T1001(this, varargin)
             fqfn = fullfile(this.sessionPath, ['T1001' this.filetypeExt]);
             if (~lexist(fqfn, 'file') && isfolder(this.freesurferLocation))
-                mic = T1001@mlpipeline.SessionData(this, 'typ', 'mlfourd.ImagingContext2');
+                mic = T1001@mlpipeline.SessionData2022(this, 'typ', 'mlfourd.ImagingContext2');
                 mic.nifti;
                 tn = strcat(tempname, '.nii.gz');
                 mic.saveas(tn);
@@ -634,6 +634,42 @@ classdef SessionData < mlpipeline.SessionData
                 g = this.multiplyTau(g);
             end
         end  
+        function fold = bootstrapScanFolder(this)
+            %% KLUDGE for subclasses implementing get.scanFolder.
+            
+            if isempty(this.tracer_) || isempty(this.attenuationCorrected_)
+                fold = '';
+                dt = datetime('now');
+                for globbed = globFoldersT(fullfile(this.sessionPath, '*_DT*.000000-Converted-*'))
+                    base = mybasename(globbed{1});
+                    re = regexp(base, ...
+                        '\S+_DT(?<yyyy>\d{4})(?<mm>\d{2})(?<dd>\d{2})(?<HH>\d{2})(?<MM>\d{2})(?<SS>\d{2})\.\d{6}-Converted\S*', ...
+                        'names');
+                    assert(~isempty(re))
+                    dt1 = datetime(str2double(re.yyyy), str2double(re.mm), str2double(re.dd), ...
+                        str2double(re.HH), str2double(re.MM), str2double(re.SS));
+                    if dt1 < dt
+                        dt = dt1; % find earliest scan
+                        fold = base;
+                    end                    
+                end                
+                return
+            end
+            dtt = mlpet.DirToolTracer( ...
+                'tracer', fullfile(this.sessionPath, this.tracer_), ...
+                'ac', this.attenuationCorrected_);            
+            assert(~isempty(dtt.dns));
+            try
+                fold = dtt.dns{this.scanIndex};
+            catch ME
+                if length(dtt.dns) < this.scanIndex 
+                    error('mlnipet:ValueError:getScanFolder', ...
+                        'SessionData.getScanFolder().this.scanIndex->%s', mat2str(this.scanIndex))
+                else
+                    rethrow(ME)
+                end
+            end
+        end
         function this = buildProximityTable(this)
             %% FINDPROXIMALBY 
             %  @return this.proximityTable is the constructed table of this session data and sorted, proximal session data.
@@ -710,7 +746,9 @@ classdef SessionData < mlpipeline.SessionData
                 sesd = this.findProximal(offset+1, varargin{:});
                 return
             end
-            tra = globFoldersT(fullfile(getenv('SINGULARITY_HOME'), prj, ses, [upper(this.tracer) '_DT*-Converted-AC']));
+            tra = globFoldersT( ...
+                fullfile(getenv('SINGULARITY_HOME'), ...
+                prj, 'derivatives', 'nipet', ses, [upper(this.tracer) '_DT*-Converted-AC']));
             if isempty(tra)
                 sesd = this;
                 return
@@ -810,7 +848,7 @@ classdef SessionData < mlpipeline.SessionData
             %         'tracer'            is char
             %          'dataAugmentation' is struct
 
- 			this = this@mlpipeline.SessionData(varargin{:});
+ 			this = this@mlpipeline.SessionData2022(varargin{:});
             
             ip = inputParser;
             ip.KeepUnmatched = true;

@@ -1,5 +1,5 @@
-classdef SubjectData < handle & mlpipeline.SubjectData
-	%% SUBJECTDATA performs aufbau of 
+classdef SubjectData2022 < mlpipeline.SubjectData2022
+	%% SUBJECTDATA2022 performs aufbau of 
     %  subjectsDir/sub-S00000/ses-E000000 |
     %                                     |----- aparc*
     %                                     |----- brainmask*
@@ -12,14 +12,23 @@ classdef SubjectData < handle & mlpipeline.SubjectData
     %                                                                                    |----- ho.4dfp.*
     %                                                                                    |----- ho_avgt.4dfp.*
     %                                                                                    |----- T1001.4dfp.* (on ho_avgt)  
-    %
+
 	%  $Revision$
  	%  was created 05-May-2019 22:07:18 by jjlee,
  	%  last modified $LastChangedDate$ and placed into repository /Users/jjlee/MATLAB-Drive/mlnipet/src/+mlnipet.
  	%% It was developed on Matlab 9.5.0.1067069 (R2018b) Update 4 for MACI64.  Copyright 2019 John Joowon Lee.
     
+    properties (Constant)
+        SURFER_OBJECTS = {'aparcA2009sAseg' 'aparcAseg' 'brain' 'brainmask' 'wmparc' 'wmparc1' 'T1001'}
+        % wmparc1 == 1 denotes CSF
+    end
+    
 	properties (Dependent)
  		subjectsJson % see also aufbauSubjectsDir, subclass ctors
+    end
+
+    methods (Abstract)
+        createProjectData(this, session_string)
     end
 
 	methods 
@@ -105,7 +114,7 @@ classdef SubjectData < handle & mlpipeline.SubjectData
             %  @return fcell is cell array of scan-folders
             
             ses = mybasename(sub_ses_pth);
-            prjData = this.mediator_.projectData;
+            prjData = this.createProjectData('sessionStr', ses);
             prj_ses_pth = fullfile(prjData.projectPath, ses, '');
             prj_ses_scn_pth = cellfun(@(x) fullfile(prj_ses_pth, [x '*-Converted']), this.TRACERS, 'UniformOutput', false);
             dtt = mlpet.DirToolTracer('tracer', prj_ses_scn_pth, 'ac', true);
@@ -211,6 +220,16 @@ classdef SubjectData < handle & mlpipeline.SubjectData
             split = strsplit(sid, '_');
             sub = ['sub-' split{2}];
         end
+        function fp   = T1001_fileprefix(~, prj_ses_pth, scn, t)
+            %% tracer 'fdg' -> fileprefix 'fdgr2_op_fdge1to4r1_frame4'
+            %  @param prj_ses_pth is f.q. path
+            %  @param scn is folder in prj_ses_pth
+            %  @param t is one of lower(this.TRACERS)
+            
+            dt = mlsystem.DirTool(fullfile(prj_ses_pth, scn, ['T1001r1_op_' t 'e1to*r1_frame*.4dfp.hdr']));
+            assert(dt.length > 0, evalc('disp(dt)'))
+            fp = myfileprefix(dt.fns{1});
+        end
         function fp   = tracer_fileprefix(~, prj_ses_pth, scn, t)
             %% tracer 'fdg' -> fileprefix 'fdgr2_op_fdge1to4r1_frame4';
             %  tracer 'fdg' -> fileprefix 'fdgr1' otherwise.
@@ -223,24 +242,23 @@ classdef SubjectData < handle & mlpipeline.SubjectData
             dt = DirTool(fullfile(prj_ses_pth, scn, [t 'r2_op_' t 'r1_frame*.4dfp.hdr']));
             if 0 == dt.length
                 dt = DirTool(fullfile(prj_ses_pth, scn, [t 'r1.4dfp.hdr']));
-                warning('mlnipet:RuntimeWarning', 'SubjectData.tracer_fileprefix is returning without motion corrections')
+                warning('mlnipet:RuntimeWarning', 'SubjectData2022.tracer_fileprefix is returning without motion corrections')
             end
-            assert(~isempty(dt.fns), 'mlnipet:RuntimeError', 'SubjectData.tracer_fileprefix')
+            assert(~isempty(dt.fns), 'mlnipet:RuntimeError', 'SubjectData2022.tracer_fileprefix')
             fp = myfileprefix(dt.fns{1});
         end
 		  
- 		function this = SubjectData(varargin)
- 			%% SUBJECTDATA
+ 		function this = SubjectData2022(varargin)
+ 			%% SUBJECTDATA2022
  			%  @param .
 
- 			this = this@mlpipeline.SubjectData(varargin{:});
+ 			this = this@mlpipeline.SubjectData2022(varargin{:});
  		end
  	end 
     
     %% PROTECTED
     
     properties (Access = protected)
-        studyRegistry_
         subjectsJson_
     end
 

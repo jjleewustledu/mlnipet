@@ -146,15 +146,128 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
             this = this.instanceCleanResolved;
         end
         function constructNiftyPETy(varargin)
-            %  @param sessionData is mlpipeline.ISessionData.
+            %  @param sessionData is mlpipeline.{ISessionData,ImagingData}.
 
             ip = inputParser;
             ip.KeepUnmatched = true;
-            addParameter(ip, 'sessionData', @(x) isa(x, 'mlpipeline.ISessionData'))
+            addParameter(ip, 'sessionData');
             parse(ip, varargin{:});
             
             bldr = mlpet.NiftyPETyBuilder(varargin{:});
             bldr.setupTracerRawdataLocation();
+        end
+        function constructPhantom(varargin)   
+
+            assert(contains(pwd, '-Converted-'));
+
+            % clean up working area
+            deleteExisting('*fdg*')
+            deleteExisting('*T1001*')
+            deleteExisting('umap*')
+            deleteExisting('msk*')
+            mlbash('rm -rf Log')
+            mlbash('rm -rf output')
+            
+            % rename working dir -NAC to -AC
+            if lstrfind(pwd, '-NAC')
+                pwdNAC = pwd;
+                pwdAC = strrep(pwdNAC, '-NAC', '-AC');
+                cd(fileparts(pwdNAC));
+                mlbash(sprintf('mv %s %s', pwdNAC, pwdAC))
+                cd(pwdAC);
+            elseif lstrfind(pwd, '-AC')
+                pwdAC = pwd;
+            else
+                error('mlan:RuntimeError', 'TracerDirector2.constructPhantom')
+            end
+            
+            % retrieve Head_MRAC_Brain_HiRes_in_UMAP_*; convert to NIfTI; resample for emissions
+            % Siemens DICOMs needed for bed positions, etc.
+            pwdUmaps = fullfile(fileparts(pwdAC), 'umaps');
+            globbed = globT(fullfile(pwdUmaps, 'Head_MRAC_*5min_in_UMAP*'));
+            if isempty(globbed)
+                globbed = globT(fullfile(pwdUmaps, '*UMAP*'));
+            end
+            assert(~isempty(globbed))
+            pwdDcms = globbed{end};
+            cd(pwdUmaps);
+            globbedniix = glob('umapSiemens*.nii.gz');
+            if ~isempty(globbedniix)
+                ensuredir('Previous')
+                mlbash(sprintf('mv -f %s Previous', cell2str(globbedniix)))
+            end
+            mlbash(sprintf('dcm2niix -f umapSiemens -o %s -b y -z y %s', pwdUmaps, pwdDcms));
+            copyfile(fullfile(getenv('SINGULARITY_HOME'), 'zeros_frame.nii.gz'));            
+            globbedniix = glob('umapSiemens*.nii.gz');
+            mlbash(sprintf('reg_resample -ref zeros_frame.nii.gz -flo %s -res umapSynth.nii.gz', globbedniix{1}));
+            delete('zeros_frame.nii.gz');
+            movefile('umapSynth.nii.gz', pwdAC);
+            cd(pwdAC);
+            
+            % adjust quantification:  blur, use expected phantom mu
+            umap = mlfourd.ImagingContext2('umapSynth.nii.gz');
+            umap = umap.blurred(mlnipet.NipetRegistry.instance().petPointSpread);
+            umap = umap .* (0.09675 / 1e3);
+            umap = umap.nifti;
+            umap.img(umap.img < 0) = 0;
+            umap.datatype = 'single';
+            umap.saveas('umapSynth.nii.gz');
+        end
+        function [m,s,vol,N,min_,max_] = constructPhantomStats(varargin) 
+            
+            ip = inputParser;
+            addParameter(ip, 'sessionData', [])
+            addParameter(ip, 'mask', [])
+            parse(ip, varargin{:})
+            ipr = ip.Results;
+            
+            if isfile('mlan_TracerDirector2_constructPhantomStats.mat')
+                mat = load('mlan_TracerDirector2_constructPhantomStats.mat');
+                mat.stats.m = mat.stats.m/1e3;
+                mat.stats.s = mat.stats.s/1e3;
+                mat.stats.min_ = mat.stats.min_/1e3;
+                mat.stats.max_ = mat.stats.max_/1e3;
+                fprintf('#############################################################################################\n')
+                fprintf('mlan.TracerDirector2.constructPhantomStats():\n')
+                fprintf('\t%s\n', basename(pwd))
+                disp(mat.stats)                
+                fprintf('\n')
+                return
+            end
+            
+            pwd0 = pushd('output/PET/single-frame');
+            
+            globbed = glob('a*t-0*sec*createPhantom.nii.gz');
+            emissions = mlfourd.ImagingContext2(globbed{1});
+            if ~isempty(ipr.mask)
+                emissions = emissions.masked(ipr.mask);
+            end
+            emissions = emissions.nifti;
+            thresh = max(0, dipmax(emissions)/2);
+            emissionsVec = emissions.img(emissions.img > thresh);
+            m = mean(emissionsVec);
+            s = std(emissionsVec);            
+            N = numel(emissionsVec);
+            vol = N*prod([2.0863 2.0863 2.0312])/1e3; % mL
+            min_ = min(emissionsVec);
+            max_ = max(emissionsVec);
+            histogram(emissionsVec)
+            emissions.fsleyes(fullfile(pwd0, 'umapSynth.nii.gz'))
+            
+            stats.m = m;
+            stats.s = s;
+            stats.vol = vol;
+            stats.N = N;
+            stats.min_ = min_;
+            stats.max_ = max_;
+            save(fullfile(pwd0, 'mlan_TracerDirector2_constructPhantomStats.mat'), 'stats')
+            
+            fprintf('#############################################################################################')
+            fprintf('mlan.TracerDirector2.constructPhantomStats():\n')
+            fprintf('\t%s\n', basename(pwd))
+            fprintf('\tspecific activity:  mean %g std %g vol %g N %g min %g max %g\n', me, sd, vol, N, min_, max_)
+            
+            popd(pwd0)
         end
         function ic2  = flipKLUDGE____(ic2)
             assert(isa(ic2, 'mlfourd.ImagingContext2'), 'mlnipet:TypeError', 'TracerDirector2.flipKLUDGE____');
@@ -238,11 +351,11 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
         function populateTracerUmapFolder(varargin)
             %% NIPET requires Siemens UMAP DICOMs in fullfile(this.sessionData.tracerLocation(), 'umap', '').
             %  Populate these locations with time-stamped folders from fullfile(this.sessionData.sessionLocation(), 'umaps')                        
-            %  @param named sessionData is an mlpipeline.ISessionData.
+            %  @param named sessionData is an mlpipeline.{ISessionData,ImagingData}.
         
             ip = inputParser;
             ip.KeepUnmatched = true;
-            addParameter(ip, 'sessionData', @(x) isa(x, 'mlpipeline.ISessionData'));
+            addParameter(ip, 'sessionData');
             parse(ip, varargin{:});            
             ipr = ip.Results;
             
@@ -268,13 +381,13 @@ classdef CommonTracerDirector < mlpipeline.AbstractDirector
         end
         function lst = prepareFreesurferData(varargin)
             %% PREPAREFREESURFERDATA prepares session-specific copies of data enumerated by this.freesurferData.
-            %  @param named sessionData is an mlpipeline.ISessionData.
+            %  @param named sessionData is an mlpipeline.{ISessionData,ImagingData}.
             %  @return 4dfp copies of this.freesurferData in sessionData.sessionPath.
             %  @return lst, a cell-array of fileprefixes for 4dfp objects created on the local filesystem.            
         
             ip = inputParser;
             ip.KeepUnmatched = true;
-            addParameter(ip, 'sessionData', @(x) isa(x, 'mlpipeline.ISessionData'));
+            addParameter(ip, 'sessionData');
             parse(ip, varargin{:});            
             sess = ip.Results.sessionData;
             
