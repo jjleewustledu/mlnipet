@@ -6,14 +6,22 @@ classdef (Abstract) StudyRegistry < handle & mlpipeline.StudyRegistry
  	%  last modified $LastChangedDate$ and placed into repository /Users/jjlee/MATLAB-Drive/mlnipet/src/+mlnipet.
  	%% It was developed on Matlab 9.5.0.1067069 (R2018b) Update 4 for MACI64.  Copyright 2019 John Joowon Lee.
 
+    properties
+        voxelTime = 60 % sec
+        wallClockLimit = 168*3600 % sec
+    end
+
     properties (Dependent)
-        earliestCalibrationDatetime
+        sessionsDir
+        subjectsDir
     end    
     
-    methods % GET        
-        function g = get.earliestCalibrationDatetime(~)
-            %g = datetime(2015,1,1, 'TimeZone', 'America/Chicago'); % accomodates sub-S33789
-            g = datetime(2016,7,19, 'TimeZone', 'local');
+    methods % GET
+        function g = get.sessionsDir(this)
+            g = fullfile(this.projectsDir, this.projectFolder, 'derivatives', 'nipet', '');
+        end
+        function g = get.subjectsDir(this)
+            g = fullfile(this.projectsDir, this.projectFolder, 'derivatives', 'resolve', '');
         end
     end
     
